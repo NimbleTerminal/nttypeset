@@ -1,0 +1,5 @@
+/dist/
+*.test
+/bin/
+/.task/
+.DS_Store

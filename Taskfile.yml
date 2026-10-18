@@ -1,0 +1,115 @@
+version: '3'
+
+env:
+  GOWORK: 'off'
+
+vars:
+  GOVULNCHECK_VERSION: v1.8.0
+  GOLANGCI_LINT_VERSION: v2.14.0
+
+tasks:
+  default:
+    cmds: [{task: build}]
+  list:
+    desc: List available tasks
+    cmds: ['task --list-all']
+  fmt:
+    desc: Format Go source
+    cmds: ['gofmt -w .']
+  fmt-check:
+    desc: Check Go formatting without changing files
+    cmds:
+      - |
+        files="$(gofmt -l .)"
+        if [ -n "$files" ]; then printf '%s\n' "$files"; exit 1; fi
+  go-tidy:
+    desc: Update module metadata
+    cmds: ['go mod tidy']
+  go-tidy-check:
+    aliases: [tidy-check]
+    desc: Check module metadata without changing files
+    cmds: ['go mod tidy -diff']
+  go-verify:
+    desc: Verify downloaded module contents
+    cmds: ['go mod verify']
+  test:
+    desc: Run tests
+    cmds: ['go test -mod=readonly ./...']
+  test-race:
+    desc: Run tests with the race detector
+    cmds: ['go test -mod=readonly -race ./...']
+  vet:
+    desc: Run Go vet
+    cmds: ['go vet -mod=readonly ./...']
+  lint-install:
+    internal: true
+    run: once
+    env: {GOOS: '', GOARCH: '', GOBIN: '{{.ROOT_DIR}}/.task/bin'}
+    cmds:
+      - |
+        if test -x "{{.ROOT_DIR}}/.task/bin/golangci-lint"; then
+          exit 0
+        fi
+        V="{{.GOLANGCI_LINT_VERSION}}"
+        if command -v golangci-lint >/dev/null && golangci-lint version 2>/dev/null | grep -Fq "${V#v}"; then
+          exit 0
+        fi
+        go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - task: lint-install
+      - |
+        if test -x "{{.ROOT_DIR}}/.task/bin/golangci-lint"; then
+          LINTER="{{.ROOT_DIR}}/.task/bin/golangci-lint"
+        else
+          LINTER="$(command -v golangci-lint)"
+        fi
+        "$LINTER" run ./...
+  build:
+    desc: Build the library
+    cmds: ['go build -mod=readonly ./...']
+  cross-windows:
+    desc: Check Windows compilation
+    env: {GOOS: windows, GOARCH: amd64, CGO_ENABLED: '0'}
+    cmds: ['go build -mod=readonly ./...']
+  cross-wasm:
+    desc: Check js/wasm compilation
+    env: {GOOS: js, GOARCH: wasm, CGO_ENABLED: '0'}
+    cmds: ['go build -mod=readonly ./...']
+  notices:
+    desc: Regenerate dependency notices
+    cmds: ['go run ./internal/tools/notices > THIRD_PARTY_NOTICES.md']
+  notices-check:
+    desc: Check generated notices without modifying tracked files
+    cmds:
+      - mkdir -p dist
+      - go run ./internal/tools/notices > dist/THIRD_PARTY_NOTICES.md
+      - cmp THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md
+  vulncheck-install:
+    internal: true
+    run: once
+    env: {GOOS: '', GOARCH: '', GOBIN: '{{.ROOT_DIR}}/.task/bin'}
+    cmds: ['go install golang.org/x/vuln/cmd/govulncheck@{{.GOVULNCHECK_VERSION}}']
+  vulncheck:
+    desc: Scan dependencies for known vulnerabilities (requires network)
+    cmds:
+      - task: vulncheck-install
+      - '"{{.ROOT_DIR}}/.task/bin/govulncheck" -test ./...'
+  ci:
+    desc: Full portable CI gate
+    cmds:
+      - task: fmt-check
+      - task: go-tidy-check
+      - task: go-verify
+      - task: test-race
+      - task: vet
+      - task: lint
+      - task: cross-windows
+      - task: cross-wasm
+      - task: build
+      - task: notices-check
+      - task: vulncheck
+  clean:
+    desc: Remove generated binaries and task tools
+    cmds: ['rm -rf bin dist .task']
