@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `examples/typeset`, a demo in its own module: a Markdown or text file in the terminal through ntpicture, with keys for scrolling, looks, the code face and the palette, or the top of the page as a PNG with `-o`.
 - `THIRD_PARTY_NOTICES.md` credits the modules linked on every supported platform, not only the generating machine's: it now includes `golang.org/x/sys`, which `x/image/vector` uses on amd64.
 
 ## v0.1.0 - 2026-10-18

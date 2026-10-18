@@ -24,23 +24,23 @@ tasks:
         if [ -n "$files" ]; then printf '%s\n' "$files"; exit 1; fi
   go-tidy:
     desc: Update module metadata
-    cmds: ['go mod tidy']
+    cmds: ['go mod tidy', 'go -C examples mod tidy']
   go-tidy-check:
     aliases: [tidy-check]
     desc: Check module metadata without changing files
-    cmds: ['go mod tidy -diff']
+    cmds: ['go mod tidy -diff', 'go -C examples mod tidy -diff']
   go-verify:
     desc: Verify downloaded module contents
-    cmds: ['go mod verify']
+    cmds: ['go mod verify', 'go -C examples mod verify']
   test:
-    desc: Run tests
-    cmds: ['go test -mod=readonly ./...']
+    desc: Run tests, root and examples modules
+    cmds: ['go test -mod=readonly ./...', 'go -C examples test -mod=readonly ./...']
   test-race:
     desc: Run tests with the race detector
-    cmds: ['go test -mod=readonly -race ./...']
+    cmds: ['go test -mod=readonly -race ./...', 'go -C examples test -mod=readonly -race ./...']
   vet:
     desc: Run Go vet
-    cmds: ['go vet -mod=readonly ./...']
+    cmds: ['go vet -mod=readonly ./...', 'go -C examples vet -mod=readonly ./...']
   lint-install:
     internal: true
     run: once
@@ -56,7 +56,7 @@ tasks:
         fi
         go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
   lint:
-    desc: Run golangci-lint
+    desc: Run golangci-lint across root and examples modules
     cmds:
       - task: lint-install
       - |
@@ -66,13 +66,27 @@ tasks:
           LINTER="$(command -v golangci-lint)"
         fi
         "$LINTER" run ./...
+        (cd examples && "$LINTER" run ./...)
   build:
-    desc: Build the library
-    cmds: ['go build -mod=readonly ./...']
+    desc: Build the library and the demo
+    cmds:
+      - go build -mod=readonly ./...
+      - task: build-examples
+  build-examples:
+    desc: Build bin/nttypeset-typeset
+    cmds:
+      - mkdir -p bin
+      - go -C examples build -mod=readonly -o ../bin/nttypeset-typeset ./typeset
+  run-typeset:
+    desc: Run the demo (task run-typeset -- -dark FILE)
+    cmds: ['go -C examples run -mod=readonly ./typeset {{.CLI_ARGS}}']
   cross-windows:
     desc: Check Windows compilation
     env: {GOOS: windows, GOARCH: amd64, CGO_ENABLED: '0'}
-    cmds: ['go build -mod=readonly ./...']
+    cmds:
+      - go build -mod=readonly ./...
+      - mkdir -p dist
+      - go -C examples build -mod=readonly -o ../dist/nttypeset-typeset.exe ./typeset
   cross-wasm:
     desc: Check js/wasm compilation
     env: {GOOS: js, GOARCH: wasm, CGO_ENABLED: '0'}
@@ -96,6 +110,8 @@ tasks:
     cmds:
       - task: vulncheck-install
       - '"{{.ROOT_DIR}}/.task/bin/govulncheck" -test ./...'
+      - cmd: '"{{.ROOT_DIR}}/.task/bin/govulncheck" -test ./...'
+        dir: examples
   ci:
     desc: Full portable CI gate
     cmds:

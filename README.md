@@ -77,6 +77,18 @@ img, _ := lay.Raster(ctx, nttypeset.View{Width: 800, Height: 600, Scale: 1},
 image lays out as the text `[image unavailable: dest]`; `Options.Bounds` sets an
 image's size and alignment from its node.
 
+## Demo
+
+`examples/typeset` shows a Markdown or text file in the terminal through
+ntpicture, with keys to scroll, cycle the looks, swap the code face and switch
+palettes, or writes the top of the page as a PNG:
+
+```sh
+task run-typeset                                        # the embedded sample page
+task run-typeset -- -dark -font technical README.md
+task run-typeset -- -numbers -select 3.0-5.10 -o page.png layout.go
+```
+
 ## What you get
 
 - Incremental layout: `Layout.Ensure`, `EnsureBlock` and `Complete` lay out only

@@ -1,7 +1,8 @@
 # Development
 
-Use Go 1.27.2 for development and CI (the module minimum is Go 1.26). This is a
-single module with no examples module and no browser build. Installed QA tools
+Use Go 1.27.2 for development and CI (the module minimum is Go 1.26). The
+library is one module; `examples/` is a second module holding the demo, with a
+`replace` to the parent directory. There is no browser build. Installed QA tools
 live in `.task/bin/` and generated output in `bin/` and `dist/`; all are
 ignored.
 
@@ -13,6 +14,8 @@ task lint                # golangci-lint v2.14.0, installed into .task/bin
 task cross-windows       # check Windows compilation
 task cross-wasm          # check js/wasm compilation
 task notices             # regenerate THIRD_PARTY_NOTICES.md
+task run-typeset         # the demo: task run-typeset -- -dark -font technical FILE
+task build-examples      # bin/nttypeset-typeset
 task clean               # remove generated artifacts and installed QA tools
 ```
 
@@ -26,8 +29,9 @@ stop CI.
 
 ## Tests
 
-`task test` runs every package, including `raster` and `goldmark`; tests use
-`internal/testfonts` (the Go fonts), never ntfonts. Run one test with
+`task test` runs every package, including `raster` and `goldmark`, and the
+examples module; the library's tests use `internal/testfonts` (the Go fonts),
+never ntfonts, while the demo's tests render with `ntfonts.Embedded`. Run one test with
 `GOWORK=off go test -mod=readonly -run 'TestName' .`. `task ci` is the full gate:
 format, tidy, verify, race tests, vet, lint, Windows and wasm builds, the notices
 check and vulncheck.
@@ -43,7 +47,8 @@ The core depends on go-text typesetting v0.3.5 and render v0.2.1,
 chroma v2.27.0, and x/image v0.47.0. goldmark appears only in the `goldmark`
 subpackage. It never depends on ntpicture, Bubble Tea, ntfonts, or gloss. Programs
 that want the embedded faces import ntfonts themselves and pass `ntfonts.Embedded`
-to `WithFonts`.
+to `WithFonts`. The examples module pins ntfonts, ntpicture and Bubble Tea; the
+notices cover the library alone, since the demo is not distributed.
 
 Run `task notices` after dependency updates, then review and commit
 THIRD_PARTY_NOTICES.md. The generator unions the packages linked on linux,

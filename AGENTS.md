@@ -36,6 +36,8 @@ task lint                # golangci-lint v2 (installed into .task/bin)
 task vet fmt fmt-check go-tidy-check go-verify
 task build cross-windows cross-wasm
 task notices             # regenerate THIRD_PARTY_NOTICES.md after dependency changes
+task run-typeset         # the demo: task run-typeset -- -dark FILE
+task build-examples      # bin/nttypeset-typeset
 task clean
 ```
 
@@ -47,13 +49,16 @@ GOWORK=off go test -mod=readonly -run 'TestName' .
 
 ## Module layout
 
-One Go module, `nimbleterminal.dev/nttypeset`. There are no examples module and
-no browser build. Never add local sibling `replace` directives.
+Two Go modules: the library, `nimbleterminal.dev/nttypeset`, and
+`examples/` (`nimbleterminal.dev/nttypeset/examples`), which holds the demo and
+replaces nttypeset with the parent directory so it tracks the working tree.
+There is no browser build. Never add sibling `replace` directives: ntfonts and
+ntpicture are pinned by version.
 
 Dependencies: go-text typesetting v0.3.5 and render v0.2.1, chroma v2.27.0, and
 x/image v0.47.0. goldmark v1.8.2 and goldmark-emoji v1.0.5 are allowed only in
-the `goldmark` subpackage. The module never imports ntpicture, Bubble Tea,
-ntfonts, or gloss.
+the `goldmark` subpackage. The library never imports ntpicture, Bubble Tea,
+ntfonts, or gloss; the examples module imports all but gloss.
 
 Generated output is ignored: `bin/`, `dist/`, `.task/`.
 
@@ -88,6 +93,7 @@ Other packages:
 | `raster/raster.go` | `raster.Rasterizer`: draws go-text runs into RGBA images through a bounded glyph-mask cache. |
 | `internal/testfonts` | A `FaceSource` over the Go fonts, for tests and the example. |
 | `internal/tools/notices` | Generates `THIRD_PARTY_NOTICES.md` (`task notices`). |
+| `examples/typeset` | The demo (separate module): a Markdown or text file in the terminal through ntpicture, or as a PNG with `-o`. |
 | `testdata/` | Fixtures for tests. |
 
 ## Invariants
