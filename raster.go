@@ -13,7 +13,9 @@ import (
 // RasterOptions are the choices of one raster.
 type RasterOptions struct {
 	Palette Palette // the colors to paint with
-	// Selection, the text to highlight, is added with selection support.
+	// Selection is the text to highlight behind its runs, in Palette.Selection.
+	// A Selected from another Layout is ignored.
+	Selection    *Selected
 	OmitAnimated bool // leave Animated images as background for the caller to composite
 }
 
@@ -78,8 +80,10 @@ func (l *Layout) rasterTo(v View, w, h int, opts RasterOptions) *image.RGBA {
 			xdraw.CatmullRom.Scale(out, r, op.asset, op.asset.Bounds(), draw.Over, nil)
 		case op.run != nil:
 			ink := p.runInk(op)
-			// The selection highlight behind the run is drawn here, with
-			// selection support.
+			if x0, x1, ok := opts.Selection.span(l, i, op); ok {
+				hr := image.Rect(int(math.Round(float64(x0-v.Left)*scale)), r.Min.Y, int(math.Round(float64(x1-v.Left)*scale)), r.Max.Y)
+				draw.Draw(out, hr, image.NewUniform(p.Selection), image.Point{}, draw.Src)
+			}
 			baseline := int(math.Round(float64(op.baseline-top) * scale))
 			l.e.rasterizer.Draw(out, op.run, op.size, scale, r.Min.X, baseline, r.Dy(), ink)
 			if op.style&Strike != 0 {
