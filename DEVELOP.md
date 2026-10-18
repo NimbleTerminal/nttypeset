@@ -46,7 +46,9 @@ that want the embedded faces import ntfonts themselves and pass `ntfonts.Embedde
 to `WithFonts`.
 
 Run `task notices` after dependency updates, then review and commit
-THIRD_PARTY_NOTICES.md. `task notices-check` enforces that generated text in CI.
+THIRD_PARTY_NOTICES.md. The generator unions the packages linked on linux,
+darwin and windows (amd64 and arm64) and js/wasm, so its output is the same on
+every machine. `task notices-check` enforces that generated text in CI.
 
 ## Releases
 

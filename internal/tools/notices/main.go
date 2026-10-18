@@ -1,6 +1,6 @@
 // notices writes THIRD_PARTY_NOTICES.md: the license of every module
-// linked into the packages of this module, read from the module cache,
-// plus the Go standard library notice.
+// linked into the packages of this module on any supported platform, read
+// from the module cache, plus the Go standard library notice.
 //
 //	go run ./internal/tools/notices > THIRD_PARTY_NOTICES.md
 package main
@@ -20,6 +20,15 @@ type module struct {
 	path, version, dir string
 }
 
+// platforms are the GOOS/GOARCH pairs whose dependency sets are credited:
+// the CI runners, the cross builds, and the common desktop targets.
+var platforms = [][2]string{
+	{"linux", "amd64"}, {"linux", "arm64"},
+	{"darwin", "amd64"}, {"darwin", "arm64"},
+	{"windows", "amd64"}, {"windows", "arm64"},
+	{"js", "wasm"},
+}
+
 var licenseName = regexp.MustCompile(`(?i)^(LICENSE|LICENCE|COPYING|NOTICE)(\.(txt|md|rst))?$`)
 
 func main() {
@@ -30,22 +39,28 @@ func main() {
 }
 
 func run() error {
-	// List the packages actually built, so only linked modules are credited.
-	// Credit versioned replacements under their own name; local ones keep ours.
-	// The standard library has no module and the main module is excluded.
-	cmd := exec.Command("go", "list", "-deps", "-f", `{{with .Module}}{{if not .Main}}{{$m := .}}{{with .Replace}}{{if .Version}}{{$m = .}}{{end}}{{end}}{{with $m}}{{.Path}}	{{.Version}}	{{.Dir}}{{end}}{{end}}{{end}}`, "./...")
-	out, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("go list: %w", err)
-	}
+	// List the packages actually built, so only linked modules are credited,
+	// on every platform the module supports: the dependency set differs by
+	// target (x/image/vector pulls x/sys/cpu on amd64 alone), and the output
+	// must not depend on the machine that generated it. Credit versioned
+	// replacements under their own name; local ones keep ours. The standard
+	// library has no module and the main module is excluded.
 	modules := map[string]module{}
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		fields := strings.Split(line, "\t")
-		if len(fields) != 3 || fields[2] == "" {
-			continue
+	for _, platform := range platforms {
+		cmd := exec.Command("go", "list", "-deps", "-f", `{{with .Module}}{{if not .Main}}{{$m := .}}{{with .Replace}}{{if .Version}}{{$m = .}}{{end}}{{end}}{{with $m}}{{.Path}}	{{.Version}}	{{.Dir}}{{end}}{{end}}{{end}}`, "./...")
+		cmd.Env = append(os.Environ(), "GOOS="+platform[0], "GOARCH="+platform[1])
+		out, err := cmd.Output()
+		if err != nil {
+			return fmt.Errorf("go list for %s/%s: %w", platform[0], platform[1], err)
 		}
-		if _, seen := modules[fields[0]]; !seen {
-			modules[fields[0]] = module{fields[0], fields[1], fields[2]}
+		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			fields := strings.Split(line, "\t")
+			if len(fields) != 3 || fields[2] == "" {
+				continue
+			}
+			if _, seen := modules[fields[0]]; !seen {
+				modules[fields[0]] = module{fields[0], fields[1], fields[2]}
+			}
 		}
 	}
 	var paths []string

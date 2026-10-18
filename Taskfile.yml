@@ -85,7 +85,7 @@ tasks:
     cmds:
       - mkdir -p dist
       - go run ./internal/tools/notices > dist/THIRD_PARTY_NOTICES.md
-      - cmp THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md
+      - diff -u THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md
   vulncheck-install:
     internal: true
     run: once

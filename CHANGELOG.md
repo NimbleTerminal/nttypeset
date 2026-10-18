@@ -1,5 +1,9 @@
 # nttypeset CHANGELOG
 
+## Unreleased
+
+- `THIRD_PARTY_NOTICES.md` credits the modules linked on every supported platform, not only the generating machine's: it now includes `golang.org/x/sys`, which `x/image/vector` uses on amd64.
+
 ## v0.1.0 - 2026-10-18
 
 - Extracted from gloss's `--typeset` view: the block and span model with layout limits, font looks and glyph fallback over a `FaceSource`, the shaping engine, incremental layout, and the glyph-mask rasterizer (`raster`).
