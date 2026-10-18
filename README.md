@@ -15,9 +15,9 @@ It was extracted from the `--typeset` view of
 
 It draws images and nothing else. It writes nothing to a terminal; show its
 output with [ntpicture](https://nimbleterminal.dev/ntpicture). The core does not
-parse Markdown: a `goldmark` subpackage will take an already parsed tree. It
-ships no fonts either: faces come from a `FaceSource`, and the sibling module
-`nimbleterminal.dev/ntfonts` will supply embedded OFL subsets.
+parse Markdown: the `nttypeset/goldmark` subpackage takes an already parsed
+goldmark tree. It ships no fonts either: faces come from a `FaceSource`, and the
+sibling module `nimbleterminal.dev/ntfonts` will supply embedded OFL subsets.
 
 ```sh
 go get nimbleterminal.dev/nttypeset
@@ -47,6 +47,30 @@ img, _ := lay.Raster(ctx, nttypeset.View{Width: 400, Height: 100, Scale: 1},
 standing in for `ntfonts.Embedded`, is `ExampleLines` in `example_test.go`.
 Handle the errors; they are dropped here for brevity.
 
+## Markdown
+
+The `nimbleterminal.dev/nttypeset/goldmark` subpackage walks a tree you parsed
+yourself, so you keep goldmark's parser, extensions and any normalization. Only
+this subpackage imports goldmark.
+
+```go
+md := goldmark.New(goldmark.WithExtensions(extension.GFM, emoji.Emoji))
+root := md.Parser().Parse(text.NewReader(src))
+
+// Images are looked up by destination; the adapter reads no files.
+doc, _ := ntgoldmark.Build(ctx, root, src, ntgoldmark.Options{
+    Images: map[string]nttypeset.Image{"logo.png": {Key: "logo.png", Still: logo}},
+    Syntax: styles.Get("github"),
+})
+lay, _ := eng.Layout(doc, 800, nttypeset.LayoutOptions{})
+img, _ := lay.Raster(ctx, nttypeset.View{Width: 800, Height: 600, Scale: 1},
+    nttypeset.RasterOptions{Palette: nttypeset.LightPalette()})
+```
+
+`ntgoldmark` is the import `nimbleterminal.dev/nttypeset/goldmark`. A missing
+image lays out as the text `[image unavailable: dest]`; `Options.Bounds` sets an
+image's size and alignment from its node.
+
 ## What you get
 
 - Incremental layout: `Layout.Ensure`, `EnsureBlock` and `Complete` lay out only
@@ -57,7 +81,7 @@ Handle the errors; they are dropped here for brevity.
 - `Highlight` and `Lines`: chroma tokens as styled spans, and source as a
   document with an optional gutter of line numbers or unwrapped lines.
 - `Preview`: a font chooser picture of sample rows, one per `FontLook`.
-- A `goldmark` adapter for parsed Markdown: coming in a later task.
+- `nttypeset/goldmark`: a parsed goldmark tree as a `Document`.
 
 Layout is bounded. A document may hold 32,768 blocks, a paragraph 16,384 runes,
 a layout 262,144 glyphs and 32,768 display-list entries, and a raster 32 Mi
@@ -66,8 +90,8 @@ raised, and exceeding one is a `*LimitError` that matches `ErrLimit`. The shaped
 run cache and the glyph-mask cache are each capped at 32 MiB, and no panic
 crosses the public API.
 
-**Status:** extracted from gloss, API settling before v0.1.0. The `goldmark`
-adapter and the `ntfonts` module are still to come.
+**Status:** extracted from gloss, API settling before v0.1.0. The `ntfonts`
+module is still to come.
 
 ## License
 

@@ -14,13 +14,13 @@ Go 1.26.
 What it is not:
 
 - It does no terminal output. ntpicture shows the images it produces.
-- The core does no Markdown parsing. A `goldmark` adapter subpackage will take a
+- The core does no Markdown parsing. The `goldmark` adapter subpackage takes a
   parsed tree.
 - It carries no fonts. Faces come from a `FaceSource`; the sibling module
   `nimbleterminal.dev/ntfonts` will supply embedded OFL subsets.
 
-Do not document API that has not landed: the `goldmark` adapter and the
-`ntfonts` module do not exist yet.
+Do not document API that has not landed: the `ntfonts` module does not exist
+yet.
 
 Longer-form docs: `README.md` (overview), `DEVELOP.md` (tooling and releases),
 `CHANGELOG.md`.
@@ -52,8 +52,8 @@ GOWORK=off go test -mod=readonly -run 'TestName' .
 One Go module, `nimbleterminal.dev/nttypeset`. There are no examples module and
 no browser build. Never add local sibling `replace` directives.
 
-Planned dependencies, when the code lands: go-text typesetting v0.3.5 and
-render v0.2.1, chroma v2.27.0, and x/image v0.47.0. goldmark is allowed only in
+Dependencies: go-text typesetting v0.3.5 and render v0.2.1, chroma v2.27.0, and
+x/image v0.47.0. goldmark v1.8.2 and goldmark-emoji v1.0.5 are allowed only in
 the `goldmark` subpackage. The module never imports ntpicture, Bubble Tea,
 ntfonts, or gloss.
 
@@ -86,6 +86,7 @@ Other packages:
 
 | Path | Role |
 | --- | --- |
+| `goldmark/goldmark.go` | `goldmark.Build`, `goldmark.Options`: a parsed goldmark tree as a `Document`. The only package that imports goldmark. |
 | `raster/raster.go` | `raster.Rasterizer`: draws go-text runs into RGBA images through a bounded glyph-mask cache. |
 | `internal/testfonts` | A `FaceSource` over the Go fonts, for tests and the example. |
 | `internal/tools/notices` | Generates `THIRD_PARTY_NOTICES.md` (`task notices`). |

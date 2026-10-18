@@ -6,6 +6,8 @@ require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/go-text/render v0.2.1
 	github.com/go-text/typesetting v0.3.5
+	github.com/yuin/goldmark v1.8.2
+	github.com/yuin/goldmark-emoji v1.0.5
 	golang.org/x/image v0.47.0
 )
 
