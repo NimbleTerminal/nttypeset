@@ -16,14 +16,12 @@ What it is not:
 - It does no terminal output. ntpicture shows the images it produces.
 - The core does no Markdown parsing. The `goldmark` adapter subpackage takes a
   parsed tree.
-- It carries no fonts. Faces come from a `FaceSource`; the sibling module
-  `nimbleterminal.dev/ntfonts` will supply embedded OFL subsets.
-
-Do not document API that has not landed: the `ntfonts` module does not exist
-yet.
+- It carries no fonts. Faces come from a `FaceSource`; the separate module
+  `nimbleterminal.dev/ntfonts` supplies embedded OFL subsets as
+  `ntfonts.Embedded`.
 
 Longer-form docs: `README.md` (overview), `DEVELOP.md` (tooling and releases),
-`CHANGELOG.md`.
+`CHANGELOG.md`. Pixel parity with gloss is checked in gloss.
 
 ## Commands
 

@@ -17,10 +17,11 @@ It draws images and nothing else. It writes nothing to a terminal; show its
 output with [ntpicture](https://nimbleterminal.dev/ntpicture). The core does not
 parse Markdown: the `nttypeset/goldmark` subpackage takes an already parsed
 goldmark tree. It ships no fonts either: faces come from a `FaceSource`, and the
-sibling module `nimbleterminal.dev/ntfonts` will supply embedded OFL subsets.
+separate module `nimbleterminal.dev/ntfonts` supplies seven embedded OFL families
+as `ntfonts.Embedded`.
 
 ```sh
-go get nimbleterminal.dev/nttypeset
+go get nimbleterminal.dev/nttypeset nimbleterminal.dev/ntfonts
 ```
 
 ## Quick start
@@ -28,8 +29,8 @@ go get nimbleterminal.dev/nttypeset
 ```go
 ctx := context.Background()
 
-// ntfonts.Embedded is the sibling module's embedded OFL subsets; it is not
-// published yet. Any FaceSource works.
+// ntfonts.Embedded is the separate ntfonts module's embedded OFL subsets.
+// Any FaceSource works.
 eng, _ := nttypeset.NewEngine(nttypeset.WithFonts(ntfonts.Embedded))
 
 // A Lines document: highlighted source, one block per line.
@@ -79,7 +80,8 @@ image's size and alignment from its node.
 - Selection: `Select` turns two points on the page into logical text and a
   highlight that `Raster` draws.
 - `Highlight` and `Lines`: chroma tokens as styled spans, and source as a
-  document with an optional gutter of line numbers or unwrapped lines.
+  document, with an optional gutter of line numbers or unwrapped lines through
+  `LayoutOptions`.
 - `Preview`: a font chooser picture of sample rows, one per `FontLook`.
 - `nttypeset/goldmark`: a parsed goldmark tree as a `Document`.
 
@@ -89,9 +91,6 @@ pixels; layout stops after 15 s. Limits can be lowered with `WithLimits`, never
 raised, and exceeding one is a `*LimitError` that matches `ErrLimit`. The shaped
 run cache and the glyph-mask cache are each capped at 32 MiB, and no panic
 crosses the public API.
-
-**Status:** extracted from gloss, API settling before v0.1.0. The `ntfonts`
-module is still to come.
 
 ## License
 

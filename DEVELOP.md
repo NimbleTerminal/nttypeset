@@ -24,11 +24,26 @@ explicitly use `GOWORK=off`.
 module. It requires network access to the Go vulnerability database; failures
 stop CI.
 
+## Tests
+
+`task test` runs every package, including `raster` and `goldmark`; tests use
+`internal/testfonts` (the Go fonts), never ntfonts. Run one test with
+`GOWORK=off go test -mod=readonly -run 'TestName' .`. `task ci` is the full gate:
+format, tidy, verify, race tests, vet, lint, Windows and wasm builds, the notices
+check and vulncheck.
+
+Pixel parity with gloss is checked in gloss, not here: gloss's
+`scripts/typeset-baseline.sh` exports typeset PNGs across fonts and themes
+through this module and compares their hashes with a recorded baseline. A change to layout, shaping or raster
+output needs that check before release.
+
 ## Dependencies
 
-The core is intended to depend on go-text typesetting v0.3.5 and render v0.2.1,
+The core depends on go-text typesetting v0.3.5 and render v0.2.1,
 chroma v2.27.0, and x/image v0.47.0. goldmark appears only in the `goldmark`
-subpackage. It never depends on ntpicture, Bubble Tea, ntfonts, or gloss.
+subpackage. It never depends on ntpicture, Bubble Tea, ntfonts, or gloss. Programs
+that want the embedded faces import ntfonts themselves and pass `ntfonts.Embedded`
+to `WithFonts`.
 
 Run `task notices` after dependency updates, then review and commit
 THIRD_PARTY_NOTICES.md. `task notices-check` enforces that generated text in CI.
