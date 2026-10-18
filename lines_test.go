@@ -54,6 +54,14 @@ func TestLinesDocument(t *testing.T) {
 		t.Fatalf("8,193 lines: %v", err)
 	}
 
+	// A cancelled context disables highlighting and still returns the document.
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	doc, err = Lines(cancelled, "x := 1\n", "go", styles.Get("github"))
+	if err != nil || len(doc.Blocks) != 1 || len(doc.Blocks[0].Spans) != 1 || doc.Blocks[0].Spans[0].Token != 0 {
+		t.Fatalf("cancelled ctx: %+v, %v", doc, err)
+	}
+
 	// A raw string across lines keeps its token, and its color, on each line.
 	src := "package main\n\nvar s = `one\ntwo\nthree`\n\nfunc main() {\n\tprintln(s)\n}\n"
 	doc, err = Lines(ctx, src, "go", styles.Get("github"))

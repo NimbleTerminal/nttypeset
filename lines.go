@@ -15,7 +15,8 @@ const maxLines = 8192
 // text is highlighted as a whole first, with style, so multi-line tokens keep
 // their color on every line; without one each line is one plain span. A
 // trailing newline does not make a last empty line. More than 8,192 lines is
-// a *LimitError.
+// a *LimitError. A cancelled ctx does not fail Lines: as with Highlight, it
+// disables highlighting and the document comes back with plain spans.
 func Lines(ctx context.Context, text, language string, style *chroma.Style) (*Document, error) {
 	text = strings.TrimSuffix(text, "\n")
 	tooMany := &LimitError{What: "typeset text exceeds 8,192 lines", Limit: maxLines}

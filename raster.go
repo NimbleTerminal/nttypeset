@@ -52,7 +52,7 @@ func (l *Layout) Raster(ctx context.Context, v View, opts RasterOptions) (img *i
 		return nil, errors.New("nttypeset: view has no pixels")
 	}
 	if w > l.e.limits.Pixels/h {
-		panic(&LimitError{What: "typeset raster exceeds pixel limit", Limit: l.e.limits.Pixels})
+		panic(&LimitError{What: "typeset raster exceeds pixel limit", Limit: int64(l.e.limits.Pixels)})
 	}
 	l.ensure(v.Top + v.Height)
 	return l.rasterTo(v, w, h, opts), nil
@@ -72,7 +72,7 @@ func (l *Layout) rasterTo(v View, w, h int, opts RasterOptions) *image.RGBA {
 	for i := range l.ops {
 		op := &l.ops[i]
 		if op.run != nil && float64(op.size)*scale > float64(l.e.limits.Em) && v.Project(op.rect).Overlaps(bounds) {
-			panic(&LimitError{What: fmt.Sprintf("typeset glyph size exceeds %s pixels", groupDigits(l.e.limits.Em)), Limit: l.e.limits.Em})
+			panic(&LimitError{What: fmt.Sprintf("typeset glyph size exceeds %s pixels", groupDigits(l.e.limits.Em)), Limit: int64(l.e.limits.Em)})
 		}
 	}
 	out := image.NewRGBA(bounds)

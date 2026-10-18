@@ -81,7 +81,7 @@ func ResolveFont(name, override string) (FontLook, error) {
 		name = "readable"
 	}
 	if override != "" && override != "jetbrains" {
-		return FontLook{}, fmt.Errorf(`mono override must be "jetbrains"`)
+		return FontLook{}, fmt.Errorf(`nttypeset: mono override must be "jetbrains"`)
 	}
 	for _, look := range fontLooks {
 		if look.Name == name {
@@ -91,7 +91,7 @@ func ResolveFont(name, override string) (FontLook, error) {
 			return look, nil
 		}
 	}
-	return FontLook{}, fmt.Errorf("unknown font look %q", name)
+	return FontLook{}, fmt.Errorf("nttypeset: unknown font look %q", name)
 }
 
 // FontKey is the cache key for a look and override: name + "/" + override,

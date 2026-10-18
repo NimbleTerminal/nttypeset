@@ -93,7 +93,7 @@ image's size and alignment from its node.
 Layout is bounded. A document may hold 32,768 blocks, a paragraph 16,384 runes,
 a layout 262,144 glyphs and 32,768 display-list entries, and a raster 32 Mi
 pixels with text at no more than 4,096 pixels per em; a block's size is at most
-1,024 layout pixels, and layout stops after 15 s. Limits can be lowered with `WithLimits`, never
+1,024 layout pixels and never negative, and layout stops after 15 s. Limits can be lowered with `WithLimits`, never
 raised, and exceeding one is a `*LimitError` that matches `ErrLimit`. The shaped
 run cache and the glyph-mask cache are each capped at 32 MiB, and no panic
 crosses the public API, including on corrupt font bytes.

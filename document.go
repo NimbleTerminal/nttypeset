@@ -115,8 +115,9 @@ func (s Bounds) Offset(available, width int) int {
 }
 
 // Image is a reserved rectangle. Still is drawn by Raster unless Animated and
-// the raster omits animated images; a nil Still, or one with empty Bounds,
-// draws the block's Spans as a placeholder. Key is reported back by Layout.Images.
+// the raster omits animated images; a nil Still (including a nil pointer
+// stored in the interface), or one with empty Bounds, draws the block's Spans
+// as a placeholder. Key is reported back by Layout.Images.
 type Image struct {
 	Key      string
 	Still    image.Image
@@ -130,7 +131,7 @@ type Block struct {
 	Kind   Kind
 	Spans  []Span
 	Rows   [][][]Span // Table: rows of cells of spans; the first row is the header
-	Size   int        // font size in layout pixels; zero is 25, over 1,024 is a *LimitError
+	Size   int        // font size in layout pixels; zero is 25, negative or over 1,024 is a *LimitError
 	Indent int        // layout pixels left of the margin
 	Quotes []Quote
 	Image  *Image // Kind == KindImage

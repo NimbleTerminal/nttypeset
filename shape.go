@@ -36,7 +36,7 @@ func (e *Engine) shape(spans []Span, size int) *shaped {
 	if count > e.limits.Runes {
 		panic(&LimitError{
 			What:  fmt.Sprintf("typeset paragraph exceeds %s runes", groupDigits(e.limits.Runes)),
-			Limit: e.limits.Runes,
+			Limit: int64(e.limits.Runes),
 		})
 	}
 

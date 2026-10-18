@@ -8,10 +8,12 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"math"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/styles"
@@ -905,6 +907,46 @@ func TestBlockSizeLimit(t *testing.T) {
 	}
 	if l.Laid() != 0 {
 		t.Fatalf("laid %d blocks", l.Laid())
+	}
+	for _, size := range []int{-3, math.MinInt} {
+		doc := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: "Hi"}}, Size: size}}}
+		err := mustLayout(t, testEngine(t), doc, 800, LayoutOptions{}).Complete(ctx)
+		if !errors.Is(err, ErrLimit) || !errors.As(err, &le) || le.What != "typeset block size is negative" || le.Limit != 0 {
+			t.Fatalf("size %d: err = %v", size, err)
+		}
+	}
+}
+
+func TestDeadlineLimitIsNanoseconds(t *testing.T) {
+	e := testEngine(t)
+	e.limits.Deadline = time.Nanosecond
+	doc := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: "one"}}}, {Kind: KindParagraph, Spans: []Span{{Text: "two"}}}}}
+	err := mustLayout(t, e, doc, 800, LayoutOptions{}).Complete(context.Background())
+	var le *LimitError
+	if !errors.Is(err, ErrLimit) || !errors.As(err, &le) || le.What != "typeset layout exceeds 0.000000001 seconds" {
+		t.Fatalf("err = %v", err)
+	}
+	if want := int64(time.Nanosecond); le.Limit != want {
+		t.Fatalf("Limit = %d, want %d", le.Limit, want)
+	}
+}
+
+func TestTypedNilStillIsPlaceholder(t *testing.T) {
+	var frame *image.RGBA
+	doc := &Document{Blocks: []Block{{Kind: KindImage, Image: &Image{Key: "nil", Still: frame}, Spans: []Span{{Text: "[image unavailable]"}}}}}
+	l := mustLayout(t, testEngine(t), doc, 800, LayoutOptions{})
+	if err := l.Complete(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	v := View{Width: 800, Height: 200, Scale: 1}
+	if p := l.Images(v); len(p) != 0 {
+		t.Fatalf("placed %+v", p)
+	}
+	if _, err := l.Raster(context.Background(), v, RasterOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if len(l.ops) == 0 || l.ops[0].run == nil || string(l.ops[0].text) != "[image unavailable]" {
+		t.Fatal("placeholder text not laid")
 	}
 }
 

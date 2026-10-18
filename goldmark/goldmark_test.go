@@ -159,7 +159,7 @@ func TestBuildListsAndQuotes(t *testing.T) {
 
 func TestBuildLimits(t *testing.T) {
 	ctx := context.Background()
-	check := func(t *testing.T, err error, what string, limit int) {
+	check := func(t *testing.T, err error, what string, limit int64) {
 		t.Helper()
 		var le *nttypeset.LimitError
 		if !errors.Is(err, nttypeset.ErrLimit) || !errors.As(err, &le) {

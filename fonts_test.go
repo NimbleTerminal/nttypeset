@@ -37,11 +37,11 @@ func TestResolveFont(t *testing.T) {
 		t.Fatalf("jetbrains = %+v, %v", look, err)
 	}
 	_, err = ResolveFont("missing", "")
-	if err == nil || err.Error() != `unknown font look "missing"` {
+	if err == nil || err.Error() != `nttypeset: unknown font look "missing"` {
 		t.Fatalf("unknown look err = %v", err)
 	}
 	_, err = ResolveFont("readable", "other")
-	if err == nil || err.Error() != `mono override must be "jetbrains"` {
+	if err == nil || err.Error() != `nttypeset: mono override must be "jetbrains"` {
 		t.Fatalf("bad override err = %v", err)
 	}
 	if got := FontKey("", ""); got != "readable/" {

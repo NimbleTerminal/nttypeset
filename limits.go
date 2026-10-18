@@ -71,7 +71,7 @@ var ErrLimit = errors.New("nttypeset: limit exceeded")
 // ("typeset layout exceeds 15 seconds", ...). errors.Is(err, ErrLimit) is true.
 type LimitError struct {
 	What  string // the message
-	Limit int    // the limit that was exceeded; nanoseconds for the layout deadline
+	Limit int64  // the limit that was exceeded; nanoseconds for the layout deadline
 }
 
 // Error returns the message.

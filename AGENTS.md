@@ -106,7 +106,9 @@ Breaking these breaks consumers, even if tests still pass.
 - **Limits can be lowered, never raised.** Hard limits: 32,768 blocks; 16,384
   runes per paragraph; 262,144 glyphs; 32,768 display-list entries; 32 Mi raster
   pixels; 4,096 raster pixels per em (`Limits.Em`); 15 s layout time. A
-  `Block.Size` over 1,024 is a `*LimitError` (a constant, not a `Limits` field).
+  `Block.Size` over 1,024, or negative, is a `*LimitError` (a constant, not a
+  `Limits` field). `LimitError.Limit` is an `int64` so the deadline fits in
+  nanoseconds on 32-bit targets.
 - **Caches are bounded.** The shaped-run cache and the glyph-mask cache are each
   capped at 32 MiB.
 - **The display list is private.** It is not exported API.

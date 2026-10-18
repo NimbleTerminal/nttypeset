@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -81,6 +82,21 @@ func (l *Layout) stale() error {
 // maxBlockSize is the largest Block.Size, in layout pixels.
 const maxBlockSize = 1024
 
+// noStill reports whether an Image.Still is absent: a nil interface, a nil
+// pointer or slice stored in the interface, or an image with empty bounds.
+func noStill(im image.Image) bool {
+	if im == nil {
+		return true
+	}
+	switch v := reflect.ValueOf(im); v.Kind() {
+	case reflect.Pointer, reflect.Slice, reflect.Map, reflect.Func, reflect.Interface:
+		if v.IsNil() {
+			return true
+		}
+	}
+	return im.Bounds().Empty()
+}
+
 // Layout starts an incremental layout of doc at width layout pixels. It lays
 // out nothing yet. More blocks than Limits.Blocks is a *LimitError, and a
 // width below 1 is an error.
@@ -89,7 +105,7 @@ func (e *Engine) Layout(doc *Document, width int, opts LayoutOptions) (*Layout, 
 		return nil, errors.New("nttypeset: nil document")
 	}
 	if len(doc.Blocks) > e.limits.Blocks {
-		return nil, &LimitError{What: fmt.Sprintf("typeset document exceeds %s blocks", groupDigits(e.limits.Blocks)), Limit: e.limits.Blocks}
+		return nil, &LimitError{What: fmt.Sprintf("typeset document exceeds %s blocks", groupDigits(e.limits.Blocks)), Limit: int64(e.limits.Blocks)}
 	}
 	if width < 1 {
 		return nil, errors.New("nttypeset: width must be positive")
@@ -215,7 +231,7 @@ func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 	// go-text wraps one paragraph at a time. Preserve explicit line breaks,
 	// including empty code lines, rather than feeding paragraph separators to it.
 	if len(spans) > l.e.limits.Runs {
-		panic(&LimitError{What: fmt.Sprintf("typeset block exceeds %s style runs", groupDigits(l.e.limits.Runs)), Limit: l.e.limits.Runs})
+		panic(&LimitError{What: fmt.Sprintf("typeset block exceeds %s style runs", groupDigits(l.e.limits.Runs)), Limit: int64(l.e.limits.Runs)})
 	}
 	var paragraphs [][]Span
 	current := []Span{}
@@ -281,7 +297,7 @@ func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 			run := r
 			l.glyphs += len(r.Glyphs)
 			if l.glyphs > l.e.limits.Glyphs {
-				panic(&LimitError{What: fmt.Sprintf("typeset layout exceeds %s glyphs", groupDigits(l.e.limits.Glyphs)), Limit: l.e.limits.Glyphs})
+				panic(&LimitError{What: fmt.Sprintf("typeset layout exceeds %s glyphs", groupDigits(l.e.limits.Glyphs)), Limit: int64(l.e.limits.Glyphs)})
 			}
 			run.Glyphs = append([]shaping.Glyph(nil), r.Glyphs...)
 			var style Style
@@ -346,7 +362,7 @@ func (l *Layout) displayListLimit() {
 	if len(l.ops) <= limit {
 		limit = l.e.limits.Height
 	}
-	panic(&LimitError{What: "typeset layout exceeds display-list limit", Limit: limit})
+	panic(&LimitError{What: "typeset layout exceeds display-list limit", Limit: int64(limit)})
 }
 
 // ensure lays out blocks until the laid height reaches bottom or the
@@ -359,7 +375,7 @@ func (l *Layout) ensure(bottom int) {
 		l.e.check()
 		if l.spent+time.Since(start) > l.e.limits.Deadline {
 			d := l.e.limits.Deadline
-			panic(&LimitError{What: "typeset layout exceeds " + strconv.FormatFloat(d.Seconds(), 'f', -1, 64) + " seconds", Limit: int(d)})
+			panic(&LimitError{What: "typeset layout exceeds " + strconv.FormatFloat(d.Seconds(), 'f', -1, 64) + " seconds", Limit: int64(d)})
 		}
 		if len(l.ops) > l.e.limits.Operations || l.y > l.e.limits.Height {
 			l.displayListLimit()
@@ -389,6 +405,9 @@ func (l *Layout) block() {
 		if size == 0 {
 			size = 25
 		}
+		if size < 0 {
+			panic(&LimitError{What: "typeset block size is negative", Limit: 0})
+		}
 		if size > maxBlockSize {
 			panic(&LimitError{What: fmt.Sprintf("typeset block size exceeds %s pixels", groupDigits(maxBlockSize)), Limit: maxBlockSize})
 		}
@@ -405,7 +424,7 @@ func (l *Layout) block() {
 			l.rect(image.Rect(x, l.y, x+width, l.y+2), fillBorder)
 			l.y += 20
 		case KindImage:
-			if b.Image == nil || b.Image.Still == nil || b.Image.Still.Bounds().Empty() {
+			if b.Image == nil || noStill(b.Image.Still) {
 				ops, h := l.text(b.Spans, 20, x, l.y, width)
 				l.ops = append(l.ops, ops...)
 				l.y += h + 20
