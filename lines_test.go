@@ -34,7 +34,7 @@ func TestLinesDocument(t *testing.T) {
 		t.Fatalf("lines %q", got)
 	}
 	for _, b := range doc.Blocks {
-		if b.Kind != Line || b.Size != 25 || len(b.Spans) != 1 {
+		if b.Kind != KindLine || b.Size != 25 || len(b.Spans) != 1 {
 			t.Fatalf("block %+v", b)
 		}
 	}

@@ -63,7 +63,23 @@ type Layout struct {
 	gutter         int  // Its width in page pixels, once measured.
 	chop           bool // Lay each line on one row, however long, instead of wrapping it.
 	extentX        int  // The right edge of the widest operation, for panning a chopped page.
+	fontGeneration int  // The engine's font generation when the layout was made.
 }
+
+// errStale is returned by a Layout made before its engine's latest font change.
+var errStale = errors.New("nttypeset: layout predates a font change")
+
+// stale returns errStale when the engine's fonts changed after the layout was
+// made. Every exported method that can lay out or raster checks it first.
+func (l *Layout) stale() error {
+	if l.fontGeneration != l.e.fontGeneration {
+		return errStale
+	}
+	return nil
+}
+
+// maxBlockSize is the largest Block.Size, in layout pixels.
+const maxBlockSize = 1024
 
 // Layout starts an incremental layout of doc at width layout pixels. It lays
 // out nothing yet. More blocks than Limits.Blocks is a *LimitError, and a
@@ -78,7 +94,7 @@ func (e *Engine) Layout(doc *Document, width int, opts LayoutOptions) (*Layout, 
 	if width < 1 {
 		return nil, errors.New("nttypeset: width must be positive")
 	}
-	return &Layout{e: e, doc: doc, width: width, y: Margin, numbers: opts.Numbers, chop: opts.Chop}, nil
+	return &Layout{e: e, doc: doc, width: width, y: Margin, numbers: opts.Numbers, chop: opts.Chop, fontGeneration: e.fontGeneration}, nil
 }
 
 // guard is deferred by every exported method that can lay out or raster,
@@ -105,7 +121,12 @@ func (l *Layout) guard(ctx context.Context, err *error) {
 // Ensure lays out blocks until the laid height reaches bottom or the document
 // ends. A cancelled ctx or a limit leaves the layout as it was before the
 // block in progress, and returns the error; the next call takes it up again.
+// After a font change (see Engine.SetFonts) it and every other method that
+// can lay out or raster returns an error.
 func (l *Layout) Ensure(ctx context.Context, bottom int) (err error) {
+	if err := l.stale(); err != nil {
+		return err
+	}
 	defer l.guard(ctx, &err)
 	defer l.e.enter(ctx)()
 	l.ensure(bottom)
@@ -115,6 +136,9 @@ func (l *Layout) Ensure(ctx context.Context, bottom int) (err error) {
 // EnsureBlock lays out blocks until block index is laid, or the document
 // ends.
 func (l *Layout) EnsureBlock(ctx context.Context, index int) (err error) {
+	if err := l.stale(); err != nil {
+		return err
+	}
 	defer l.guard(ctx, &err)
 	defer l.e.enter(ctx)()
 	for l.next <= index && l.next < len(l.doc.Blocks) {
@@ -162,8 +186,15 @@ func (l *Layout) LineAt(top int) int {
 }
 
 // Find lays out until the first run or image whose Href is href, or the end,
-// and returns its page rectangle.
+// and returns its page rectangle. The empty href finds nothing and lays out
+// nothing.
 func (l *Layout) Find(ctx context.Context, href string) (r image.Rectangle, found bool, err error) {
+	if err := l.stale(); err != nil {
+		return image.Rectangle{}, false, err
+	}
+	if href == "" {
+		return image.Rectangle{}, false, nil
+	}
 	defer l.guard(ctx, &err)
 	defer l.e.enter(ctx)()
 	at := 0
@@ -358,6 +389,9 @@ func (l *Layout) block() {
 		if size == 0 {
 			size = 25
 		}
+		if size > maxBlockSize {
+			panic(&LimitError{What: fmt.Sprintf("typeset block size exceeds %s pixels", groupDigits(maxBlockSize)), Limit: maxBlockSize})
+		}
 		if l.numbers && l.doc.Lines {
 			x += l.gutterWidth(size)
 			l.number(l.next, size)
@@ -367,11 +401,11 @@ func (l *Layout) block() {
 			width = 1 << 24
 		}
 		switch b.Kind {
-		case Rule:
+		case KindRule:
 			l.rect(image.Rect(x, l.y, x+width, l.y+2), fillBorder)
 			l.y += 20
 		case KindImage:
-			if b.Image == nil || b.Image.Still == nil {
+			if b.Image == nil || b.Image.Still == nil || b.Image.Still.Bounds().Empty() {
 				ops, h := l.text(b.Spans, 20, x, l.y, width)
 				l.ops = append(l.ops, ops...)
 				l.y += h + 20
@@ -385,23 +419,23 @@ func (l *Layout) block() {
 			x += im.Bounds.Offset(width, w)
 			l.ops = append(l.ops, operation{rect: image.Rect(x, l.y, x+w, l.y+h), asset: im.Still, destination: im.Key, animated: im.Animated, href: b.Href})
 			l.y += h + 20
-		case Table:
+		case KindTable:
 			l.table(b, x, width)
 		default:
-			if b.Kind == Heading && l.next > 1 {
+			if b.Kind == KindHeading && l.next > 1 {
 				l.y += 16
 			}
 			inset := 0
-			if b.Kind == Code {
+			if b.Kind == KindCode {
 				inset = 16
 			}
 			ops, h := l.text(b.Spans, size, x+inset, l.y+inset, max(1, width-inset*2))
-			if b.Kind == Code {
+			if b.Kind == KindCode {
 				l.rect(image.Rect(x, l.y, x+width, l.y+h+32), fillCode)
 			}
 			l.ops = append(l.ops, ops...)
 			l.y += h + 2*inset
-			if b.Kind != Line {
+			if b.Kind != KindLine {
 				l.y += 16
 			}
 		}

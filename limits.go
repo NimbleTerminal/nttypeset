@@ -18,6 +18,7 @@ type Limits struct {
 	Deadline   time.Duration // 15 s of layout time per layout, cumulative
 	ShapeCache int           // 32 MiB
 	GlyphCache int           // 32 MiB
+	Em         int           // raster pixels per em; default 4096
 }
 
 // defaultLimits are the ceilings; the zero Limits means these.
@@ -32,6 +33,7 @@ var defaultLimits = Limits{
 	Deadline:   15 * time.Second,
 	ShapeCache: 32 << 20,
 	GlyphCache: 32 << 20,
+	Em:         4096,
 }
 
 // withDefaults returns a copy with every zero or negative field set to its default and
@@ -53,6 +55,7 @@ func (l Limits) withDefaults() Limits {
 	l.Pixels = lower(l.Pixels, d.Pixels)
 	l.ShapeCache = lower(l.ShapeCache, d.ShapeCache)
 	l.GlyphCache = lower(l.GlyphCache, d.GlyphCache)
+	l.Em = lower(l.Em, d.Em)
 	if l.Deadline <= 0 {
 		l.Deadline = d.Deadline
 	} else {
@@ -68,7 +71,7 @@ var ErrLimit = errors.New("nttypeset: limit exceeded")
 // ("typeset layout exceeds 15 seconds", ...). errors.Is(err, ErrLimit) is true.
 type LimitError struct {
 	What  string // the message
-	Limit int    // the limit that was exceeded
+	Limit int    // the limit that was exceeded; nanoseconds for the layout deadline
 }
 
 // Error returns the message.

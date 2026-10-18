@@ -19,6 +19,7 @@ func TestLimitsDefaults(t *testing.T) {
 		Deadline:   15 * time.Second,
 		ShapeCache: 32 << 20,
 		GlyphCache: 32 << 20,
+		Em:         4096,
 	}
 	if got != want {
 		t.Fatalf("defaults = %+v, want %+v", got, want)

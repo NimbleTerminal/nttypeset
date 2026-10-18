@@ -96,3 +96,10 @@ func TestPreviewBoundedAndCancelled(t *testing.T) {
 		t.Error("bad override: want an error")
 	}
 }
+
+func TestPreviewNilContext(t *testing.T) {
+	img, err := Preview(nil, FontLooks()[:1], "", "body", "code", 400, 400, LightPalette(), WithFonts(previewSource{})) //nolint:staticcheck // nil ctx is documented
+	if err != nil || img == nil {
+		t.Fatalf("Preview(nil) = %v, %v", img, err)
+	}
+}

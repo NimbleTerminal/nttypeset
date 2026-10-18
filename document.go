@@ -37,12 +37,15 @@ const (
 	RoleAccent
 )
 
-// Span is a run of text with one style, ink and optional link.
+// Span is a run of text with one style, ink and optional link. Its ink is, in
+// order of precedence: the gutter's muted ink for line numbers, the accent for
+// RoleAccent, Palette.Syntax for a nonzero Token, Ink when its alpha is not zero, and
+// otherwise the palette's Foreground.
 type Span struct {
 	Text  string
 	Style Style
 	Role  Role
-	Ink   color.RGBA       // explicit ink; zero defers to Role and Token
+	Ink   color.RGBA       // explicit ink, used when Role is RoleText and Token is zero
 	Token chroma.TokenType // nonzero paints from Palette.Syntax
 	Href  string           // link destination; not part of shaping
 }
@@ -50,25 +53,24 @@ type Span struct {
 // Kind says what a Block is and how it is laid out.
 type Kind uint8
 
-// The Kind values. The quote and image kinds are KindQuote and KindImage
-// because Quote and Image name types.
+// The Kind values, each named Kind and the block it lays out.
 const (
-	// Paragraph is a wrapped run of spans.
-	Paragraph Kind = iota
-	// Heading is a paragraph set in a heading size.
-	Heading
+	// KindParagraph is a wrapped run of spans.
+	KindParagraph Kind = iota
+	// KindHeading is a paragraph set in a heading size.
+	KindHeading
 	// KindQuote is a paragraph inside a blockquote.
 	KindQuote
-	// Code is a code block: inset, code-background fill.
-	Code
-	// Line is one line of a Lines document: no gap after it.
-	Line
-	// Rule is a horizontal rule.
-	Rule
+	// KindCode is a code block: inset, code-background fill.
+	KindCode
+	// KindLine is one line of a Lines document: no gap after it.
+	KindLine
+	// KindRule is a horizontal rule.
+	KindRule
 	// KindImage is an image block; its Block.Image is set.
 	KindImage
-	// Table is a table; its cells are in Block.Rows.
-	Table
+	// KindTable is a table; its cells are in Block.Rows.
+	KindTable
 )
 
 // Quote is one blockquote bar beside a block: its indent, and whether this is
@@ -113,8 +115,8 @@ func (s Bounds) Offset(available, width int) int {
 }
 
 // Image is a reserved rectangle. Still is drawn by Raster unless Animated and
-// the raster omits animated images; nil Still draws the block's Spans as a
-// placeholder. Key is reported back by Layout.Images.
+// the raster omits animated images; a nil Still, or one with empty Bounds,
+// draws the block's Spans as a placeholder. Key is reported back by Layout.Images.
 type Image struct {
 	Key      string
 	Still    image.Image
@@ -128,7 +130,7 @@ type Block struct {
 	Kind   Kind
 	Spans  []Span
 	Rows   [][][]Span // Table: rows of cells of spans; the first row is the header
-	Size   int        // font size in layout pixels; zero is 25
+	Size   int        // font size in layout pixels; zero is 25, over 1,024 is a *LimitError
 	Indent int        // layout pixels left of the margin
 	Quotes []Quote
 	Image  *Image // Kind == KindImage

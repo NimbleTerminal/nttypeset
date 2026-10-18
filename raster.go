@@ -3,6 +3,7 @@ package nttypeset
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"image/draw"
 	"math"
@@ -34,8 +35,12 @@ type Placed struct {
 // Raster lays out through the view's bottom and draws the view into a new
 // picture of v.Size(). A view without a positive Width, Height and Scale, or
 // with only one side of Pixels set, is an error; a raster over
-// Limits.Pixels is a *LimitError.
+// Limits.Pixels, or one that would draw text at more than Limits.Em raster
+// pixels per em, is a *LimitError.
 func (l *Layout) Raster(ctx context.Context, v View, opts RasterOptions) (img *image.RGBA, err error) {
+	if err := l.stale(); err != nil {
+		return nil, err
+	}
 	defer l.guard(ctx, &err)
 	defer l.e.enter(ctx)()
 	if v.Width < 1 || v.Height < 1 || !(v.Scale > 0) || math.IsInf(v.Scale, 0) {
@@ -58,10 +63,19 @@ func (l *Layout) Raster(ctx context.Context, v View, opts RasterOptions) (img *i
 // picture's exact device size, which can differ from the scaled region by a
 // rounding pixel at the bottom or right edge. With OmitAnimated, animated
 // images stay as blank reserved rectangles for the viewer to composite over.
+// A text run in the view drawn at more than Limits.Em pixels per em panics
+// with a *LimitError before anything is allocated: glyph tiles grow with it.
 func (l *Layout) rasterTo(v View, w, h int, opts RasterOptions) *image.RGBA {
 	p := opts.Palette
 	top, scale := v.Top, v.Scale
-	out := image.NewRGBA(image.Rect(0, 0, w, h))
+	bounds := image.Rect(0, 0, w, h)
+	for i := range l.ops {
+		op := &l.ops[i]
+		if op.run != nil && float64(op.size)*scale > float64(l.e.limits.Em) && v.Project(op.rect).Overlaps(bounds) {
+			panic(&LimitError{What: fmt.Sprintf("typeset glyph size exceeds %s pixels", groupDigits(l.e.limits.Em)), Limit: l.e.limits.Em})
+		}
+	}
+	out := image.NewRGBA(bounds)
 	draw.Draw(out, out.Bounds(), image.NewUniform(p.Background), image.Point{}, draw.Src)
 	for i := range l.ops {
 		op := &l.ops[i]

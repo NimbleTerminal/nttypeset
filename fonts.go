@@ -40,12 +40,19 @@ func (s Style) Variant() string {
 // FaceSource supplies TrueType or OpenType bytes for a family and variant. It
 // uses strings only, so a font package implements it without importing
 // nttypeset.
+//
+// The engine asks only for the families of the built-in looks: Literata,
+// Newsreader, IBM Plex Sans, Source Serif 4, Iosevka, IBM Plex Mono and
+// JetBrains Mono, each in the four variants. Literata and Iosevka are also the
+// glyph fallback. A source serves its own faces under these names; any family
+// it does not supply makes the looks that use it fail to load.
 type FaceSource interface {
 	Face(family, variant string) ([]byte, error)
 }
 
 // FontLook pairs a body family with a code family, by name. The family names
-// are what the engine asks its FaceSource for.
+// are what the engine asks its FaceSource for. The engine accepts only the
+// built-in looks, chosen by Name; a FontLook made by hand is not a new look.
 type FontLook struct {
 	Name, Body, Code string
 }
@@ -63,7 +70,8 @@ const (
 	fallbackCode = "Iosevka"
 )
 
-// FontLooks returns the built-in looks: readable, editorial, technical, compact.
+// FontLooks returns the built-in looks: readable, editorial, technical,
+// compact. They are the only looks WithLook and SetFonts accept.
 func FontLooks() []FontLook { return append([]FontLook(nil), fontLooks...) }
 
 // ResolveFont returns the look called name; the empty name is readable. The
@@ -104,13 +112,20 @@ var noLigatures = []shaping.FontFeature{
 	{Tag: opentype.MustNewTag("calt"), Value: 0},
 }
 
-// loadFace fetches and parses one family and variant.
-func loadFace(src FaceSource, family, variant string) (*font.Face, error) {
+// loadFace fetches and parses one family and variant. A panic in the source
+// or in the parser, which go-text's ParseTTF raises on some truncated or
+// corrupt fonts, is returned as an error naming the family and variant.
+func loadFace(src FaceSource, family, variant string) (face *font.Face, err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			face, err = nil, fmt.Errorf("font %s %s: %v", family, variant, p)
+		}
+	}()
 	data, err := src.Face(family, variant)
 	if err != nil {
 		return nil, fmt.Errorf("font %s %s: %w", family, variant, err)
 	}
-	face, err := font.ParseTTF(bytes.NewReader(data))
+	face, err = font.ParseTTF(bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("font %s %s: %w", family, variant, err)
 	}

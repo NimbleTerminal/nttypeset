@@ -15,15 +15,15 @@ const selectWidth = 400
 // paragraphs, a two-line code block, a table, and a paragraph that wraps.
 func selectDocument() *Document {
 	return &Document{Blocks: []Block{
-		{Kind: Heading, Spans: []Span{{Text: "Title", Style: Bold}}, Size: 50},
-		{Kind: Paragraph, Spans: []Span{{Text: "Hello wide world of words."}}},
-		{Kind: Paragraph, Spans: []Span{{Text: "Second paragraph here."}}},
-		{Kind: Code, Spans: []Span{{Text: "code line one\ncode line two", Style: Mono}}},
-		{Kind: Table, Rows: [][][]Span{
+		{Kind: KindHeading, Spans: []Span{{Text: "Title", Style: Bold}}, Size: 50},
+		{Kind: KindParagraph, Spans: []Span{{Text: "Hello wide world of words."}}},
+		{Kind: KindParagraph, Spans: []Span{{Text: "Second paragraph here."}}},
+		{Kind: KindCode, Spans: []Span{{Text: "code line one\ncode line two", Style: Mono}}},
+		{Kind: KindTable, Rows: [][][]Span{
 			{{{Text: "A", Style: Bold}}, {{Text: "B", Style: Bold}}},
 			{{{Text: "alpha"}}, {{Text: "beta"}}},
 		}},
-		{Kind: Paragraph, Spans: []Span{{Text: strings.Repeat("wrapped words ", 40) + "end."}}},
+		{Kind: KindParagraph, Spans: []Span{{Text: strings.Repeat("wrapped words ", 40) + "end."}}},
 	}}
 }
 
@@ -231,7 +231,7 @@ func TestTypesetSelectionPreservesWrappedText(t *testing.T) {
 		{"token", Block{Spans: []Span{{Text: token}}}, token},
 		{"url", Block{Spans: []Span{{Text: "https://example.com/" + token}}}, "https://example.com/" + token},
 		{"spaces", Block{Spans: []Span{{Text: strings.Repeat("café   résumé ", 20) + "end"}}}, strings.Repeat("café   résumé ", 20) + "end"},
-		{"code", Block{Kind: Code, Spans: []Span{{Text: token + "   tail\n    next line", Style: Mono}}}, token + "   tail\n    next line"},
+		{"code", Block{Kind: KindCode, Spans: []Span{{Text: token + "   tail\n    next line", Style: Mono}}}, token + "   tail\n    next line"},
 		{"styles", Block{Spans: []Span{{Text: "start "}, {Text: token, Style: Bold}, {Text: " end"}}}, "start " + token + " end"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -306,5 +306,15 @@ func TestSelectionSkipsGutterNumbers(t *testing.T) {
 	p := s.Places()
 	if p.Anchor.Para < 0 || p.Focus.Para < 0 {
 		t.Fatalf("a gutter place: %+v", p)
+	}
+}
+
+func TestNilSelected(t *testing.T) {
+	var s *Selected
+	if got := s.Places(); got != (Selection{}) {
+		t.Fatalf("Places = %+v", got)
+	}
+	if got := s.Text(); got != "" {
+		t.Fatalf("Text = %q", got)
 	}
 }

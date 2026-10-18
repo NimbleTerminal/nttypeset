@@ -2,7 +2,10 @@
 // for tests that need real faces without shipping font files.
 //
 // It does not import nttypeset, so the nttypeset package's own tests can use
-// it. Build the look with FontLook{Name: Name, Body: Body, Code: Code}.
+// it. Its families are not the built-in looks' families, so NewEngine cannot
+// load a look from it directly: tests alias the built-in family names (for
+// example Literata and Iosevka) to Body and Code, or load faces for
+// FontLook{Name: Name, Body: Body, Code: Code} through package internals.
 package testfonts
 
 import (

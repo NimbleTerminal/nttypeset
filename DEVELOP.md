@@ -53,9 +53,7 @@ THIRD_PARTY_NOTICES.md. `task notices-check` enforces that generated text in CI.
 This is a Go library: CI runs for branches, pull requests, and tags. Release
 publication is manual, and there is no binary packaging.
 
-Before the first release, configure the `nimbleterminal.dev/nttypeset`
-`go-import` metadata to resolve to `github.com/NimbleTerminal/nttypeset`, and
-confirm module discovery from a fresh consumer without workspace or local
-replacements. Update CHANGELOG.md, run `task ci`, and review dependency
-licenses. Then commit the release preparation, tag the intended version, wait
-for tag CI to pass, and publish the GitHub release with its changelog.
+The `nimbleterminal.dev/nttypeset` `go-import` metadata already resolves to
+`github.com/NimbleTerminal/nttypeset`. To release, update CHANGELOG.md, run
+`task ci`, review dependency licenses and commit. Then tag the intended
+version, push the tag, and verify the version on pkg.go.dev once tag CI passes.

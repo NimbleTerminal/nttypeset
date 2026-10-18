@@ -41,6 +41,9 @@ type Selected struct {
 // placed end asks. It returns nil, nil when a place is not in the document, or
 // when a point has no text to land on. Gutter line numbers are never text.
 func (l *Layout) Select(ctx context.Context, s Selection) (sel *Selected, err error) {
+	if err := l.stale(); err != nil {
+		return nil, err
+	}
 	defer l.guard(ctx, &err)
 	defer l.e.enter(ctx)()
 	a, ok := l.place(s.Anchor)
@@ -59,13 +62,24 @@ func (l *Layout) Select(ctx context.Context, s Selection) (sel *Selected, err er
 }
 
 // Places returns both ends as places in the text, in the order they were
-// given, with the points they were given kept.
-func (s *Selected) Places() Selection { return s.places }
+// given, with the points they were given kept. A nil Selected has none.
+func (s *Selected) Places() Selection {
+	if s == nil {
+		return Selection{}
+	}
+	return s.places
+}
 
 // Text returns the selected text in reading order: runs of a line joined, a
 // paragraph's original text across visual wraps, paragraphs of a block by a
 // line break (cells of a table row by a tab), and blocks by a blank line.
-func (s *Selected) Text() string { return s.layout.selected(s) }
+// A nil Selected has no text.
+func (s *Selected) Text() string {
+	if s == nil {
+		return ""
+	}
+	return s.layout.selected(s)
+}
 
 func (l *Layout) placed(p Place, c caret) Place {
 	op := &l.ops[c.op]

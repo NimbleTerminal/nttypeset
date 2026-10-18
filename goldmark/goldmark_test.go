@@ -68,7 +68,7 @@ func TestBuildKinds(t *testing.T) {
 			images = append(images, b)
 		}
 	}
-	for _, k := range []nttypeset.Kind{nttypeset.Heading, nttypeset.Paragraph, nttypeset.KindQuote, nttypeset.Code, nttypeset.Table, nttypeset.KindImage} {
+	for _, k := range []nttypeset.Kind{nttypeset.KindHeading, nttypeset.KindParagraph, nttypeset.KindQuote, nttypeset.KindCode, nttypeset.KindTable, nttypeset.KindImage} {
 		if !seen[k] {
 			t.Errorf("no block of kind %d in %+v", k, doc.Blocks)
 		}

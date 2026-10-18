@@ -96,10 +96,17 @@ Breaking these breaks consumers, even if tests still pass.
 
 - **No panic crosses the public boundary.** Every exported method recovers into
   an error. Context errors pass through unwrapped. Limit errors are
-  `*LimitError` and match `ErrLimit`.
+  `*LimitError` and match `ErrLimit`. Font parsing recovers go-text's panics on
+  corrupt bytes into an error.
+- **Only the built-in looks.** A `FaceSource` serves the built-in family names;
+  there is no custom-look API yet.
+- **A font change invalidates layouts.** After `SetFonts` changes the look, a
+  `Layout` made before it returns an error from every method that lays out or
+  rasters.
 - **Limits can be lowered, never raised.** Hard limits: 32,768 blocks; 16,384
   runes per paragraph; 262,144 glyphs; 32,768 display-list entries; 32 Mi raster
-  pixels; 15 s layout time.
+  pixels; 4,096 raster pixels per em (`Limits.Em`); 15 s layout time. A
+  `Block.Size` over 1,024 is a `*LimitError` (a constant, not a `Limits` field).
 - **Caches are bounded.** The shaped-run cache and the glyph-mask cache are each
   capped at 32 MiB.
 - **The display list is private.** It is not exported API.

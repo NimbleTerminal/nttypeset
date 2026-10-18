@@ -14,9 +14,14 @@ import (
 // Layout. An empty body or code leaves its line out.
 //
 // It builds one Engine per look from opts plus WithLook(look.Name, override),
-// so opts must include WithFonts. Both dimensions must be 160 to 1200, and
-// there must be at least one look. A cancelled ctx returns its error.
+// so opts must include WithFonts, and each look's Name must be a built-in
+// look; a look's Body and Code fields are informational and not used. Both
+// dimensions must be 160 to 1200, and there must be at least one look. A
+// cancelled ctx returns its error; a nil ctx is context.Background().
 func Preview(ctx context.Context, looks []FontLook, override, body, code string, width, height int, p Palette, opts ...Option) (*image.RGBA, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if len(looks) == 0 {
 		return nil, errors.New("nttypeset: preview needs at least one look")
 	}

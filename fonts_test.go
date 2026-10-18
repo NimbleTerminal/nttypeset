@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/image/font/gofont/goregular"
 	"nimbleterminal.dev/nttypeset/internal/testfonts"
 )
 
@@ -126,8 +127,79 @@ func TestLoadFacesNamesMissingFamily(t *testing.T) {
 func TestLoadFacesRejectsBadBytes(t *testing.T) {
 	src := funcSource(func(family, variant string) ([]byte, error) { return []byte("not a font"), nil })
 	_, err := loadFaces(src, testLook)
-	if err == nil || !strings.Contains(err.Error(), "Go") {
+	if err == nil || !strings.Contains(err.Error(), "font Go "+VariantRegular+":") {
+		t.Fatalf("err = %v, want one naming the family and variant", err)
+	}
+}
+
+// corruptSource serves bad bytes for every face of the built-in families.
+type corruptSource []byte
+
+func (c corruptSource) Face(family, variant string) ([]byte, error) { return c, nil }
+
+func TestLoadFacesRejectsCorruptBytes(t *testing.T) {
+	half := goregular.TTF[:len(goregular.TTF)/2]
+	flipped := xorEvery(goregular.TTF, 0, 50, 0xff)
+	// This corruption makes go-text's ParseTTF panic (slice bounds out of
+	// range); the two above are returned as errors by ParseTTF itself.
+	panicky := xorEvery(goregular.TTF, 10, 1, 0x01)
+	for name, data := range map[string][]byte{"truncated": half, "flipped": flipped, "panicky": panicky} {
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if p := recover(); p != nil {
+					t.Fatalf("NewEngine panicked: %v", p)
+				}
+			}()
+			e, err := NewEngine(WithFonts(corruptSource(data)))
+			if err == nil || e != nil {
+				t.Fatalf("NewEngine = %v, %v; want an error", e, err)
+			}
+			if !strings.Contains(err.Error(), "font Literata "+VariantRegular+":") {
+				t.Fatalf("err = %v, want one naming the family and variant", err)
+			}
+		})
+	}
+}
+
+// xorEvery returns a copy of data with width bytes XORed by x at every
+// 1,000 bytes from offset.
+func xorEvery(data []byte, offset, width int, x byte) []byte {
+	out := append([]byte(nil), data...)
+	for i := offset; i < len(out); i += 1000 {
+		for j := i; j < min(i+width, len(out)); j++ {
+			out[j] ^= x
+		}
+	}
+	return out
+}
+
+func TestLoadFaceRecoversSourcePanic(t *testing.T) {
+	src := funcSource(func(family, variant string) ([]byte, error) { panic("source broke") })
+	_, err := loadFace(src, "Go", VariantBold)
+	if err == nil || err.Error() != "font Go Bold: source broke" {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestFallbackRecoversCorruptBytes(t *testing.T) {
+	// The primary faces load; the fallback family's bytes make go-text panic.
+	panicky := xorEvery(goregular.TTF, 10, 1, 0x01)
+	src := funcSource(func(family, variant string) ([]byte, error) {
+		if family == "Literata" {
+			return panicky, nil
+		}
+		return testfonts.Source.Face(family, variant)
+	})
+	f, err := newFaces(src, testLook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := fallbackMap{f: f, style: 0}
+	if got := m.ResolveFace('漢'); got != f.faces[0] {
+		t.Fatal("did not return the primary face")
+	}
+	if !f.fallbackFailed[0] || !f.missing['漢'] {
+		t.Fatalf("failed=%v missing=%v", f.fallbackFailed, f.missing)
 	}
 }
 

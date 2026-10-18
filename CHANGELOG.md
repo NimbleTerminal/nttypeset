@@ -5,3 +5,9 @@
 - Extracted from gloss's `--typeset` view: the block and span model with layout limits, font looks and glyph fallback over a `FaceSource`, the shaping engine, incremental layout, and the glyph-mask rasterizer (`raster`).
 - Logical selection and caret placement, link and image hit areas, chroma highlighting, `Lines` documents and the `Preview` font chooser picture.
 - `nttypeset/goldmark` turns a parsed goldmark tree into a Document.
+- Hardened the public boundary: corrupt font bytes are an error, not a panic, in `NewEngine`, `SetFonts` and glyph fallback; `Limits.Em` (4,096 raster pixels per em) and a 1,024-pixel `Block.Size` cap bound glyph tiles; a `Layout` made before a font change returns an error.
+- Renamed the `Kind` constants uniformly: `KindParagraph`, `KindHeading`, `KindQuote`, `KindCode`, `KindLine`, `KindRule`, `KindImage`, `KindTable`.
+
+### Known limitations
+
+- Only the four built-in looks are accepted; a `FaceSource` serves their family names. `WithFontLook`, for custom looks, is planned for a later release.

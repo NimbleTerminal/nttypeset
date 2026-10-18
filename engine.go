@@ -23,8 +23,10 @@ type Option func(*options)
 // WithFonts sets the source of font bytes. It is required.
 func WithFonts(src FaceSource) Option { return func(o *options) { o.src = src } }
 
-// WithLook chooses the font look and the mono override. The default is
-// "readable" with no override.
+// WithLook chooses one of the built-in looks (see FontLooks) by name, and the
+// mono override. The default is "readable" with no override. Custom looks are
+// not supported: a FaceSource supplies its own faces under the built-in
+// family names instead.
 func WithLook(name, override string) Option {
 	return func(o *options) { o.name, o.override = name, override }
 }
@@ -34,7 +36,8 @@ func WithLook(name, override string) Option {
 func WithLimits(l Limits) Option { return func(o *options) { o.limits = l } }
 
 // Engine owns faces, the shaper, the shaped-run cache and the glyph-mask
-// cache. It is not safe for concurrent use: a caller serializes it.
+// cache. It is not safe for concurrent use: a caller serializes it. Use
+// NewEngine; the zero Engine is not usable.
 type Engine struct {
 	src        FaceSource
 	faces      *faces
@@ -47,6 +50,9 @@ type Engine struct {
 	rasterizer *raster.Rasterizer
 	limits     Limits
 	ctx        context.Context
+	// fontGeneration counts font changes; a Layout made before the latest
+	// one is stale.
+	fontGeneration int
 }
 
 // NewEngine builds an engine. WithFonts is required; the look must resolve and
@@ -82,6 +88,10 @@ func NewEngine(opts ...Option) (*Engine, error) {
 // SetFonts switches to another look. It returns false and does nothing when
 // the look is the current one. Otherwise it clears the shape cache and the
 // glyph-mask cache and returns true. On error the engine is as it was.
+//
+// A font change invalidates every Layout made from the engine: their methods
+// that can lay out or raster return an error from then on, and the caller
+// makes a new Layout.
 func (e *Engine) SetFonts(name, override string) (changed bool, err error) {
 	key := FontKey(name, override)
 	if e.fontKey == key {
@@ -101,6 +111,7 @@ func (e *Engine) SetFonts(name, override string) (changed bool, err error) {
 	e.cache = map[string]*shaped{}
 	e.cacheBytes = 0
 	e.rasterizer.Clear()
+	e.fontGeneration++
 	return true, nil
 }
 
@@ -113,6 +124,9 @@ func (e *Engine) FontKey() string { return e.fontKey }
 
 // Fallbacks returns the fallback families used so far, sorted.
 func (e *Engine) Fallbacks() []string {
+	if e.faces == nil {
+		return nil
+	}
 	names := make([]string, 0, len(e.faces.fallbackUsed))
 	for name := range e.faces.fallbackUsed {
 		names = append(names, name)
@@ -125,6 +139,9 @@ func (e *Engine) Fallbacks() []string {
 // for, sorted. A fallback family the font source cannot supply leaves its
 // runes here.
 func (e *Engine) Missing() []rune {
+	if e.faces == nil {
+		return nil
+	}
 	runes := make([]rune, 0, len(e.faces.missing))
 	for r := range e.faces.missing {
 		runes = append(runes, r)
@@ -136,8 +153,12 @@ func (e *Engine) Missing() []rune {
 // GlyphCache reports the glyph-mask cache's size and hit counts.
 func (e *Engine) GlyphCache() raster.Stats { return e.rasterizer.Stats() }
 
-// SetGlyphBudget sets the glyph-mask cache budget in bytes, evicting down to it.
-func (e *Engine) SetGlyphBudget(bytes int) { e.rasterizer.SetBudget(bytes) }
+// SetGlyphBudget sets the glyph-mask cache budget in bytes; a cache over it is
+// cleared at the next insertion that would exceed it. A budget above Limits.GlyphCache is clamped to it; zero or negative is
+// ignored.
+func (e *Engine) SetGlyphBudget(bytes int) {
+	e.rasterizer.SetBudget(min(bytes, e.limits.GlyphCache))
+}
 
 // enter makes ctx the cancellation of the layout entry point that calls it,
 // and returns the function that gives back what was there before, so an entry

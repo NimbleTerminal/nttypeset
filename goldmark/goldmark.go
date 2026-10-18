@@ -48,6 +48,10 @@ type walkAbort struct{ err error }
 // More than 32,768 blocks, or a code block of more than 8,192 lines, is a
 // *nttypeset.LimitError (it matches nttypeset.ErrLimit). A cancelled ctx
 // returns ctx.Err() unwrapped. Build never panics.
+//
+// The walk recurses with the tree's depth, and Build sets no depth limit:
+// callers must bound the nesting of the Markdown they parse (gloss rejects
+// deeply nested input before parsing).
 func Build(ctx context.Context, root ast.Node, source []byte, opts Options) (doc *nttypeset.Document, err error) {
 	w := &walker{ctx: ctx, opts: opts}
 	defer func() {
@@ -85,7 +89,7 @@ func (w *walker) walk(n ast.Node, data []byte, indent int) {
 			for i := range heading {
 				heading[i].Role = nttypeset.RoleAccent
 			}
-			w.blocks = append(w.blocks, nttypeset.Block{Kind: nttypeset.Heading, Spans: heading, Size: []int{50, 46, 42, 38, 33, 29}[v.Level-1], Indent: indent})
+			w.blocks = append(w.blocks, nttypeset.Block{Kind: nttypeset.KindHeading, Spans: heading, Size: []int{50, 46, 42, 38, 33, 29}[v.Level-1], Indent: indent})
 		case *ast.Paragraph, *ast.TextBlock:
 			if c.ChildCount() == 1 {
 				if im := standaloneImage(c.FirstChild()); im != nil {
@@ -93,7 +97,7 @@ func (w *walker) walk(n ast.Node, data []byte, indent int) {
 					continue
 				}
 			}
-			w.blocks = append(w.blocks, nttypeset.Block{Kind: nttypeset.Paragraph, Spans: inline(c, data, 0), Indent: indent})
+			w.blocks = append(w.blocks, nttypeset.Block{Kind: nttypeset.KindParagraph, Spans: inline(c, data, 0), Indent: indent})
 		case *ast.FencedCodeBlock, *ast.CodeBlock:
 			if c.Lines().Len() > maxCodeLines {
 				panic(walkAbort{&nttypeset.LimitError{What: "typeset code block exceeds 8,192 lines", Limit: maxCodeLines}})
@@ -107,13 +111,13 @@ func (w *walker) walk(n ast.Node, data []byte, indent int) {
 			if fence, ok := c.(*ast.FencedCodeBlock); ok {
 				language = string(fence.Language(data))
 			}
-			w.blocks = append(w.blocks, nttypeset.Block{Kind: nttypeset.Code, Spans: nttypeset.Highlight(w.ctx, strings.TrimSuffix(b.String(), "\n"), language, w.opts.Syntax), Size: 25, Indent: indent})
+			w.blocks = append(w.blocks, nttypeset.Block{Kind: nttypeset.KindCode, Spans: nttypeset.Highlight(w.ctx, strings.TrimSuffix(b.String(), "\n"), language, w.opts.Syntax), Size: 25, Indent: indent})
 		case *ast.Blockquote:
 			start := len(w.blocks)
 			w.walk(c, data, indent+24)
 			for i := start; i < len(w.blocks); i++ {
 				w.blocks[i].Quotes = append(w.blocks[i].Quotes, nttypeset.Quote{Indent: indent + 24, Last: i == len(w.blocks)-1})
-				if w.blocks[i].Kind == nttypeset.Paragraph {
+				if w.blocks[i].Kind == nttypeset.KindParagraph {
 					w.blocks[i].Kind = nttypeset.KindQuote
 				}
 			}
@@ -135,7 +139,7 @@ func (w *walker) walk(n ast.Node, data []byte, indent int) {
 				index++
 			}
 		case *ext.Table:
-			b := nttypeset.Block{Kind: nttypeset.Table, Indent: indent}
+			b := nttypeset.Block{Kind: nttypeset.KindTable, Indent: indent}
 			for row := v.FirstChild(); row != nil; row = row.NextSibling() {
 				var cells [][]nttypeset.Span
 				var style nttypeset.Style
@@ -149,7 +153,7 @@ func (w *walker) walk(n ast.Node, data []byte, indent int) {
 			}
 			w.blocks = append(w.blocks, b)
 		case *ast.ThematicBreak:
-			w.blocks = append(w.blocks, nttypeset.Block{Kind: nttypeset.Rule})
+			w.blocks = append(w.blocks, nttypeset.Block{Kind: nttypeset.KindRule})
 		case *ast.HTMLBlock: // no raw HTML layout
 		default:
 			w.walk(c, data, indent)

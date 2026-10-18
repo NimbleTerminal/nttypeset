@@ -234,3 +234,64 @@ func TestSetGlyphBudget(t *testing.T) {
 		t.Fatalf("stats = %+v", e.GlyphCache())
 	}
 }
+
+func TestSetGlyphBudgetClamps(t *testing.T) {
+	e, err := NewEngine(WithFonts(aliasSource{}), WithLimits(Limits{GlyphCache: 4096}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.SetGlyphBudget(1 << 30)
+	if e.GlyphCache().Budget != 4096 {
+		t.Fatalf("budget = %d, want the 4096 limit", e.GlyphCache().Budget)
+	}
+	e.SetGlyphBudget(0)
+	if e.GlyphCache().Budget != 4096 {
+		t.Fatalf("zero budget changed it: %d", e.GlyphCache().Budget)
+	}
+}
+
+func TestZeroEngineAccessors(t *testing.T) {
+	var e Engine
+	if e.Fallbacks() != nil || e.Missing() != nil {
+		t.Fatal("zero Engine accessors returned values")
+	}
+}
+
+func TestSetFontsInvalidatesLayouts(t *testing.T) {
+	ctx := context.Background()
+	e := testEngine(t)
+	doc := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: "hello", Href: "#a"}}}}}
+	l := mustLayout(t, e, doc, 400, LayoutOptions{})
+	if err := l.Ensure(ctx, 100); err != nil {
+		t.Fatal(err)
+	}
+	if changed, err := e.SetFonts("technical", ""); err != nil || !changed {
+		t.Fatalf("SetFonts = %v, %v", changed, err)
+	}
+	const want = "nttypeset: layout predates a font change"
+	if err := l.Ensure(ctx, 100); err == nil || err.Error() != want {
+		t.Fatalf("Ensure = %v", err)
+	}
+	if err := l.EnsureBlock(ctx, 0); err == nil || err.Error() != want {
+		t.Fatalf("EnsureBlock = %v", err)
+	}
+	if err := l.Complete(ctx); err == nil || err.Error() != want {
+		t.Fatalf("Complete = %v", err)
+	}
+	if _, _, err := l.Find(ctx, "#a"); err == nil || err.Error() != want {
+		t.Fatalf("Find = %v", err)
+	}
+	if _, err := l.Raster(ctx, View{Width: 100, Height: 100, Scale: 1}, RasterOptions{}); err == nil || err.Error() != want {
+		t.Fatalf("Raster = %v", err)
+	}
+	if _, err := l.Select(ctx, Selection{}); err == nil || err.Error() != want {
+		t.Fatalf("Select = %v", err)
+	}
+	// A failed or unchanged SetFonts keeps layouts valid.
+	fresh := mustLayout(t, e, doc, 400, LayoutOptions{})
+	_, _ = e.SetFonts("technical", "")
+	_, _ = e.SetFonts("compact", "")
+	if err := fresh.Ensure(ctx, 100); err != nil {
+		t.Fatalf("fresh Ensure = %v", err)
+	}
+}

@@ -30,7 +30,6 @@ go get nimbleterminal.dev/nttypeset nimbleterminal.dev/ntfonts
 ctx := context.Background()
 
 // ntfonts.Embedded is the separate ntfonts module's embedded OFL subsets.
-// Any FaceSource works.
 eng, _ := nttypeset.NewEngine(nttypeset.WithFonts(ntfonts.Embedded))
 
 // A Lines document: highlighted source, one block per line.
@@ -43,6 +42,12 @@ lay, _ := eng.Layout(doc, 400, nttypeset.LayoutOptions{})
 img, _ := lay.Raster(ctx, nttypeset.View{Width: 400, Height: 100, Scale: 1},
     nttypeset.RasterOptions{Palette: nttypeset.LightPalette()})
 ```
+
+The engine offers four built-in looks (`FontLooks`: readable, editorial,
+technical, compact) and asks its `FaceSource` for their families by name:
+Literata, Newsreader, IBM Plex Sans, Source Serif 4, Iosevka, IBM Plex Mono and
+JetBrains Mono. Any FaceSource that serves these family names works; to use
+other fonts, serve them under these names. Custom looks are not supported yet.
 
 `img` is an `*image.RGBA` of 400x100 pixels. The runnable form, with test fonts
 standing in for `ntfonts.Embedded`, is `ExampleLines` in `example_test.go`.
@@ -87,10 +92,11 @@ image's size and alignment from its node.
 
 Layout is bounded. A document may hold 32,768 blocks, a paragraph 16,384 runes,
 a layout 262,144 glyphs and 32,768 display-list entries, and a raster 32 Mi
-pixels; layout stops after 15 s. Limits can be lowered with `WithLimits`, never
+pixels with text at no more than 4,096 pixels per em; a block's size is at most
+1,024 layout pixels, and layout stops after 15 s. Limits can be lowered with `WithLimits`, never
 raised, and exceeding one is a `*LimitError` that matches `ErrLimit`. The shaped
 run cache and the glyph-mask cache are each capped at 32 MiB, and no panic
-crosses the public API.
+crosses the public API, including on corrupt font bytes.
 
 ## License
 

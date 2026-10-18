@@ -9,6 +9,7 @@ import (
 	"image/draw"
 	"image/png"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -33,8 +34,8 @@ func fixtureDocument(t *testing.T) *Document {
 	}
 	heading := []Span{{Text: "Typeset Markdown", Style: Bold, Role: RoleAccent}}
 	doc := &Document{Blocks: []Block{
-		{Kind: Heading, Spans: heading, Size: 50},
-		{Kind: Paragraph, Spans: []Span{
+		{Kind: KindHeading, Spans: heading, Size: 50},
+		{Kind: KindParagraph, Spans: []Span{
 			{Text: "A quiet page with café, naïve, and résumé in an embedded font. "},
 			{Text: "Bold text", Style: Bold},
 			{Text: ", "},
@@ -46,19 +47,19 @@ func fixtureDocument(t *testing.T) *Document {
 			{Text: "."},
 		}},
 		{Kind: KindQuote, Spans: []Span{{Text: "A quotation has room to breathe."}}, Indent: 24, Quotes: []Quote{{Indent: 24, Last: true}}},
-		{Kind: Code, Spans: Highlight(context.Background(), fixtureCode, "go", styles.Get("github")), Size: 25},
-		{Kind: Table, Rows: [][][]Span{
+		{Kind: KindCode, Spans: Highlight(context.Background(), fixtureCode, "go", styles.Get("github")), Size: 25},
+		{Kind: KindTable, Rows: [][][]Span{
 			{{{Text: "Element", Style: Bold}}, {{Text: "Purpose", Style: Bold}}, {{Text: "Notes", Style: Bold}}},
 			{{{Text: "Heading"}}, {{Text: "A place to start"}}, {{Text: "first"}}},
 			{{{Text: "Table"}}, {{Text: "A few facts together"}}, {{Text: "second"}}},
 		}},
-		{Kind: Paragraph, Spans: []Span{{Text: "• "}, {Text: "[x] ", Style: Mono}, {Text: "Read a page"}}, Indent: 24},
-		{Kind: Paragraph, Spans: []Span{{Text: "• "}, {Text: "[ ] ", Style: Mono}, {Text: "Turn to the next one"}}, Indent: 24},
+		{Kind: KindParagraph, Spans: []Span{{Text: "• "}, {Text: "[x] ", Style: Mono}, {Text: "Read a page"}}, Indent: 24},
+		{Kind: KindParagraph, Spans: []Span{{Text: "• "}, {Text: "[ ] ", Style: Mono}, {Text: "Turn to the next one"}}, Indent: 24},
 		{Kind: KindImage, Image: &Image{Key: "landscape.png", Still: landscape}, Spans: []Span{{Text: "[image unavailable: landscape.png]", Style: Italic}}},
 		{Kind: KindImage, Image: &Image{Key: "missing-typeset-image.png"}, Spans: []Span{{Text: "[image unavailable: missing-typeset-image.png]", Style: Italic}}},
 	}}
 	for range 20 {
-		doc.Blocks = append(doc.Blocks, Block{Kind: Paragraph, Spans: []Span{{Text: "A closing paragraph with "}, {Text: "bold", Style: Bold}, {Text: " words that fill the page."}}})
+		doc.Blocks = append(doc.Blocks, Block{Kind: KindParagraph, Spans: []Span{{Text: "A closing paragraph with "}, {Text: "bold", Style: Bold}, {Text: " words that fill the page."}}})
 	}
 	return doc
 }
@@ -87,7 +88,7 @@ func TestFixtureAndProgressiveLayout(t *testing.T) {
 	for _, b := range doc.Blocks {
 		kinds[b.Kind] = true
 	}
-	for _, k := range []Kind{Heading, Paragraph, KindQuote, Code, Table, KindImage} {
+	for _, k := range []Kind{KindHeading, KindParagraph, KindQuote, KindCode, KindTable, KindImage} {
 		if !kinds[k] {
 			t.Errorf("missing kind %d", k)
 		}
@@ -157,9 +158,9 @@ func TestTextWrappingPreservesUnicodeAndStyles(t *testing.T) {
 	}
 	// A width of 220 leaves the paragraph 120 pixels between the margins.
 	doc := &Document{Blocks: []Block{
-		{Kind: Paragraph, Spans: spans},
-		{Kind: Paragraph, Spans: []Span{{Text: "one\n\nthree", Style: Mono}}},
-		{Kind: Paragraph, Spans: []Span{{Text: "end"}}},
+		{Kind: KindParagraph, Spans: spans},
+		{Kind: KindParagraph, Spans: []Span{{Text: "one\n\nthree", Style: Mono}}},
+		{Kind: KindParagraph, Spans: []Span{{Text: "end"}}},
 	}}
 	l := mustLayout(t, e, doc, 220, LayoutOptions{})
 	if err := l.EnsureBlock(context.Background(), 1); err != nil {
@@ -207,7 +208,7 @@ func TestTextWrappingPreservesUnicodeAndStyles(t *testing.T) {
 
 func TestHighlightedRasterResizeAndThemeCache(t *testing.T) {
 	github := styles.Get("github")
-	doc := &Document{Blocks: []Block{{Kind: Code, Spans: Highlight(context.Background(), fixtureCode, "go", github), Size: 25}}}
+	doc := &Document{Blocks: []Block{{Kind: KindCode, Spans: Highlight(context.Background(), fixtureCode, "go", github), Size: 25}}}
 	light := LightPalette()
 	e := testEngine(t)
 	wide := mustRaster(t, mustLayout(t, e, doc, 800, LayoutOptions{}), View{Width: 800, Height: 300, Scale: 1}, light)
@@ -253,9 +254,9 @@ func TestHighlightedRasterResizeAndThemeCache(t *testing.T) {
 // quarter pixel of drawing each run straight from its outlines, and the cache
 // stays within its budget.
 func TestTypesetGlyphMasks(t *testing.T) {
-	doc := &Document{Blocks: []Block{{Kind: Heading, Spans: []Span{{Text: "Glyph masks", Style: Bold, Role: RoleAccent}}, Size: 50}}}
+	doc := &Document{Blocks: []Block{{Kind: KindHeading, Spans: []Span{{Text: "Glyph masks", Style: Bold, Role: RoleAccent}}, Size: 50}}}
 	for range 30 {
-		doc.Blocks = append(doc.Blocks, Block{Kind: Paragraph, Spans: []Span{{Text: "Café and "}, {Text: "a paragraph", Style: Italic}, {Text: " with "}, {Text: "code", Style: Mono}, {Text: "."}}})
+		doc.Blocks = append(doc.Blocks, Block{Kind: KindParagraph, Spans: []Span{{Text: "Café and "}, {Text: "a paragraph", Style: Italic}, {Text: " with "}, {Text: "code", Style: Mono}, {Text: "."}}})
 	}
 	e := testEngine(t)
 	pal := LightPalette()
@@ -333,7 +334,7 @@ func TestTypesetGlyphMasks(t *testing.T) {
 func TestLayoutLimits(t *testing.T) {
 	ctx := context.Background()
 	e := testEngine(t)
-	long := &Document{Blocks: []Block{{Kind: Paragraph, Spans: []Span{{Text: strings.Repeat("a", 16385)}}}}}
+	long := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: strings.Repeat("a", 16385)}}}}}
 	l := mustLayout(t, e, long, 800, LayoutOptions{})
 	if err := l.Complete(ctx); !errors.Is(err, ErrLimit) {
 		t.Fatalf("paragraph: %v", err)
@@ -343,9 +344,9 @@ func TestLayoutLimits(t *testing.T) {
 	}
 	glyphs := &Document{}
 	for range 16 {
-		glyphs.Blocks = append(glyphs.Blocks, Block{Kind: Paragraph, Spans: []Span{{Text: strings.Repeat("a", 16384)}}})
+		glyphs.Blocks = append(glyphs.Blocks, Block{Kind: KindParagraph, Spans: []Span{{Text: strings.Repeat("a", 16384)}}})
 	}
-	glyphs.Blocks = append(glyphs.Blocks, Block{Kind: Paragraph, Spans: []Span{{Text: "a"}}})
+	glyphs.Blocks = append(glyphs.Blocks, Block{Kind: KindParagraph, Spans: []Span{{Text: "a"}}})
 	l = mustLayout(t, e, glyphs, 800, LayoutOptions{})
 	err := l.Complete(ctx)
 	var le *LimitError
@@ -392,9 +393,9 @@ func (c countdown) Err() error {
 }
 
 func TestCancelledEnsureRollsBackOneBlock(t *testing.T) {
-	doc := &Document{Blocks: []Block{{Kind: Heading, Spans: []Span{{Text: "Title", Style: Bold, Role: RoleAccent}}, Size: 50}}}
+	doc := &Document{Blocks: []Block{{Kind: KindHeading, Spans: []Span{{Text: "Title", Style: Bold, Role: RoleAccent}}, Size: 50}}}
 	for range 60 {
-		doc.Blocks = append(doc.Blocks, Block{Kind: Paragraph, Spans: []Span{{Text: "A paragraph of a few words that wraps."}}})
+		doc.Blocks = append(doc.Blocks, Block{Kind: KindParagraph, Spans: []Span{{Text: "A paragraph of a few words that wraps."}}})
 	}
 	ctx := context.Background()
 	lay := mustLayout(t, testEngine(t), doc, 400, LayoutOptions{})
@@ -434,10 +435,10 @@ func linkDocument() *Document {
 	still := image.NewRGBA(image.Rect(0, 0, 40, 30))
 	draw.Draw(still, still.Bounds(), image.NewUniform(color.RGBA{200, 50, 90, 255}), image.Point{}, draw.Src)
 	return &Document{Blocks: []Block{
-		{Kind: Heading, Spans: []Span{{Text: "Heading", Style: Bold, Role: RoleAccent}}, Size: 50},
-		{Kind: Paragraph, Spans: []Span{{Text: strings.Repeat("linked words ", 24), Href: url, Role: RoleAccent}}},
-		{Kind: Paragraph, Spans: []Span{{Text: "https://example.com/", Href: "https://example.com/", Role: RoleAccent}}},
-		{Kind: Table, Rows: [][][]Span{{{{Text: "Table", Style: Bold}}}, {{{Text: "cell", Href: "https://example.net/", Role: RoleAccent}}}}},
+		{Kind: KindHeading, Spans: []Span{{Text: "Heading", Style: Bold, Role: RoleAccent}}, Size: 50},
+		{Kind: KindParagraph, Spans: []Span{{Text: strings.Repeat("linked words ", 24), Href: url, Role: RoleAccent}}},
+		{Kind: KindParagraph, Spans: []Span{{Text: "https://example.com/", Href: "https://example.com/", Role: RoleAccent}}},
+		{Kind: KindTable, Rows: [][][]Span{{{{Text: "Table", Style: Bold}}}, {{{Text: "cell", Href: "https://example.net/", Role: RoleAccent}}}}},
 		{Kind: KindImage, Image: &Image{Key: "local.png", Still: still}, Href: "https://example.edu/"},
 	}}
 }
@@ -491,7 +492,7 @@ func TestLinksWrapReflowAndViewport(t *testing.T) {
 }
 
 func TestDarkPaletteFillsAndTokens(t *testing.T) {
-	doc := &Document{Blocks: []Block{{Kind: Code, Spans: Highlight(context.Background(), "func hi() string { return \"hello\" }", "go", styles.Get("github")), Size: 25}}}
+	doc := &Document{Blocks: []Block{{Kind: KindCode, Spans: Highlight(context.Background(), "func hi() string { return \"hello\" }", "go", styles.Get("github")), Size: 25}}}
 	l := mustLayout(t, testEngine(t), doc, 600, LayoutOptions{})
 	if err := l.Complete(context.Background()); err != nil {
 		t.Fatal(err)
@@ -596,7 +597,7 @@ func TestLineNumbersGutterAndChop(t *testing.T) {
 		}
 	}
 	// Numbers are only for Lines documents.
-	md := &Document{Blocks: []Block{{Kind: Paragraph, Spans: []Span{{Text: strings.Repeat("prose ", 300)}}}}}
+	md := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: strings.Repeat("prose ", 300)}}}}}
 	page := mustLayout(t, e, md, 800, LayoutOptions{Numbers: true, Chop: true})
 	if err := page.Complete(ctx); err != nil {
 		t.Fatal(err)
@@ -708,7 +709,7 @@ func TestFind(t *testing.T) {
 		if i == 50 {
 			spans = append(spans, Span{Text: " target", Href: "#target", Role: RoleAccent})
 		}
-		doc.Blocks = append(doc.Blocks, Block{Kind: Paragraph, Spans: spans})
+		doc.Blocks = append(doc.Blocks, Block{Kind: KindParagraph, Spans: spans})
 	}
 	l := mustLayout(t, testEngine(t), doc, 800, LayoutOptions{})
 	r, ok, err := l.Find(ctx, "#target")
@@ -852,5 +853,117 @@ func TestGuard(t *testing.T) {
 	}
 	if err := run(errors.New("other")); err == nil || err.Error() != "nttypeset: other" {
 		t.Fatalf("error: %v", err)
+	}
+}
+
+func TestRasterEmLimit(t *testing.T) {
+	ctx := context.Background()
+	// 200 layout pixels at scale 40 is 8,000 raster pixels per em.
+	doc := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: "Hi"}}, Size: 200}}}
+	l := mustLayout(t, testEngine(t), doc, 800, LayoutOptions{})
+	big := View{Top: 50, Left: 50, Width: 40, Height: 40, Scale: 40}
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	_, err := l.Raster(ctx, big, RasterOptions{Palette: LightPalette()})
+	runtime.ReadMemStats(&after)
+	var le *LimitError
+	if !errors.Is(err, ErrLimit) || !errors.As(err, &le) || le.What != "typeset glyph size exceeds 4,096 pixels" || le.Limit != 4096 {
+		t.Fatalf("err = %v", err)
+	}
+	// A 1600×1600 raster would be 10 MB; nothing near that was allocated.
+	if n := after.TotalAlloc - before.TotalAlloc; n > 1<<20 {
+		t.Fatalf("allocated %d bytes before refusing", n)
+	}
+	if _, err := l.Raster(ctx, View{Top: 50, Left: 50, Width: 40, Height: 40, Scale: 1}, RasterOptions{Palette: LightPalette()}); err != nil {
+		t.Fatalf("scale 1: %v", err)
+	}
+	// A lowered limit names itself.
+	e, err := NewEngine(WithFonts(aliasSource{}), WithLimits(Limits{Em: 100}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	small := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: "Hi"}}}}}
+	_, err = mustLayout(t, e, small, 800, LayoutOptions{}).Raster(ctx, View{Width: 400, Height: 100, Scale: 5}, RasterOptions{Palette: LightPalette()})
+	if !errors.As(err, &le) || le.What != "typeset glyph size exceeds 100 pixels" || le.Limit != 100 {
+		t.Fatalf("lowered: %v", err)
+	}
+}
+
+func TestBlockSizeLimit(t *testing.T) {
+	ctx := context.Background()
+	ok := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: "Hi"}}, Size: 1024}}}
+	if err := mustLayout(t, testEngine(t), ok, 800, LayoutOptions{}).Complete(ctx); err != nil {
+		t.Fatalf("size 1024: %v", err)
+	}
+	doc := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: "Hi"}}, Size: 1025}}}
+	l := mustLayout(t, testEngine(t), doc, 800, LayoutOptions{})
+	err := l.Complete(ctx)
+	var le *LimitError
+	if !errors.As(err, &le) || le.What != "typeset block size exceeds 1,024 pixels" || le.Limit != 1024 {
+		t.Fatalf("err = %v", err)
+	}
+	if l.Laid() != 0 {
+		t.Fatalf("laid %d blocks", l.Laid())
+	}
+}
+
+func TestZeroSizeStillIsPlaceholder(t *testing.T) {
+	doc := &Document{Blocks: []Block{{Kind: KindImage, Image: &Image{Key: "empty", Still: image.NewRGBA(image.Rect(0, 0, 0, 0))}, Spans: []Span{{Text: "[image unavailable]"}}}}}
+	l := mustLayout(t, testEngine(t), doc, 800, LayoutOptions{})
+	if err := l.Complete(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	v := View{Width: 800, Height: 200, Scale: 1}
+	if p := l.Images(v); len(p) != 0 {
+		t.Fatalf("placed %+v", p)
+	}
+	if len(l.ops) == 0 || l.ops[0].run == nil || string(l.ops[0].text) != "[image unavailable]" {
+		t.Fatal("placeholder text not laid")
+	}
+}
+
+func TestFindEmptyHref(t *testing.T) {
+	doc := &Document{Blocks: []Block{
+		{Kind: KindParagraph, Spans: []Span{{Text: "hello"}}},
+		{Kind: KindParagraph, Spans: []Span{{Text: "x", Href: "#a"}}},
+	}}
+	l := mustLayout(t, testEngine(t), doc, 800, LayoutOptions{})
+	r, ok, err := l.Find(context.Background(), "")
+	if r != (image.Rectangle{}) || ok || err != nil || l.Laid() != 0 {
+		t.Fatalf("Find(\"\") = %v %v %v, laid %d", r, ok, err, l.Laid())
+	}
+}
+
+func TestTextReusesShapingWithCallerHrefs(t *testing.T) {
+	ctx := context.Background()
+	e := testEngine(t)
+	layoutWith := func(href string) []Link {
+		doc := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{{Text: "same text", Href: href, Role: RoleAccent}}}}}
+		l := mustLayout(t, e, doc, 400, LayoutOptions{})
+		v := View{Width: 400, Height: 200, Scale: 1}
+		if err := l.Ensure(ctx, v.Top+v.Height); err != nil {
+			t.Fatal(err)
+		}
+		return l.Links(v)
+	}
+	first := layoutWith("https://one.example/")
+	entries := len(e.cache)
+	second := layoutWith("https://two.example/")
+	if len(e.cache) != entries {
+		t.Fatalf("second layout missed the shape cache: %d entries, was %d", len(e.cache), entries)
+	}
+	if len(first) == 0 || len(second) == 0 {
+		t.Fatal("no links")
+	}
+	for _, link := range first {
+		if link.URL != "https://one.example/" {
+			t.Fatal("cache reused wrong link", link.URL)
+		}
+	}
+	for _, link := range second {
+		if link.URL != "https://two.example/" {
+			t.Fatal("cache reused wrong link", link.URL)
+		}
 	}
 }

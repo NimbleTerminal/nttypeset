@@ -29,7 +29,7 @@ func Lines(ctx context.Context, text, language string, style *chroma.Style) (*Do
 	if language != "" {
 		spans = Highlight(ctx, text, language, style)
 	}
-	b := Block{Kind: Line, Size: 25}
+	b := Block{Kind: KindLine, Size: 25}
 	for _, run := range spans {
 		for i, line := range strings.Split(run.Text, "\n") {
 			if i > 0 {
@@ -37,7 +37,7 @@ func Lines(ctx context.Context, text, language string, style *chroma.Style) (*Do
 					b.Spans = []Span{{Text: " "}}
 				}
 				doc.Blocks = append(doc.Blocks, b)
-				b = Block{Kind: Line, Size: 25}
+				b = Block{Kind: KindLine, Size: 25}
 			}
 			part := run
 			part.Text = strings.ReplaceAll(line, "\t", "    ")
