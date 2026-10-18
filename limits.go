@@ -34,11 +34,11 @@ var defaultLimits = Limits{
 	GlyphCache: 32 << 20,
 }
 
-// withDefaults returns a copy with every zero field set to its default and
+// withDefaults returns a copy with every zero or negative field set to its default and
 // every nonzero field clamped to no more than its default.
 func (l Limits) withDefaults() Limits {
 	lower := func(v, def int) int {
-		if v == 0 {
+		if v <= 0 {
 			return def
 		}
 		return min(v, def)
@@ -53,7 +53,7 @@ func (l Limits) withDefaults() Limits {
 	l.Pixels = lower(l.Pixels, d.Pixels)
 	l.ShapeCache = lower(l.ShapeCache, d.ShapeCache)
 	l.GlyphCache = lower(l.GlyphCache, d.GlyphCache)
-	if l.Deadline == 0 {
+	if l.Deadline <= 0 {
 		l.Deadline = d.Deadline
 	} else {
 		l.Deadline = min(l.Deadline, d.Deadline)

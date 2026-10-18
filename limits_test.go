@@ -32,6 +32,12 @@ func TestLimitsOnlyLower(t *testing.T) {
 	if g := (Limits{Glyphs: 100}).withDefaults().Glyphs; g != 100 {
 		t.Fatalf("lowered Glyphs = %d, want 100", g)
 	}
+	if g := (Limits{Glyphs: -5}).withDefaults().Glyphs; g != 262144 {
+		t.Fatalf("negative Glyphs = %d, want the default 262144", g)
+	}
+	if d := (Limits{Deadline: -time.Second}).withDefaults().Deadline; d != 15*time.Second {
+		t.Fatalf("negative Deadline = %v, want 15s", d)
+	}
 	if d := (Limits{Deadline: time.Hour}).withDefaults().Deadline; d != 15*time.Second {
 		t.Fatalf("raised Deadline = %v, want 15s", d)
 	}
