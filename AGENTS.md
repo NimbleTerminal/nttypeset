@@ -19,8 +19,8 @@ What it is not:
 - It carries no fonts. Faces come from a `FaceSource`; the sibling module
   `nimbleterminal.dev/ntfonts` will supply embedded OFL subsets.
 
-The repository is a scaffold: only `doc.go` exists so far. Do not document API
-that has not landed.
+Do not document API that has not landed: the `goldmark` adapter and the
+`ntfonts` module do not exist yet.
 
 Longer-form docs: `README.md` (overview), `DEVELOP.md` (tooling and releases),
 `CHANGELOG.md`.
@@ -58,6 +58,38 @@ the `goldmark` subpackage. The module never imports ntpicture, Bubble Tea,
 ntfonts, or gloss.
 
 Generated output is ignored: `bin/`, `dist/`, `.task/`.
+
+## File map
+
+Root package `nttypeset`:
+
+| File | Role |
+| --- | --- |
+| `doc.go` | Package comment. |
+| `document.go` | The model: `Document`, `Block`, `Span`, `Image`, `Style`, `Role`, `Kind`, `Bounds`, `Margin`. |
+| `limits.go` | `Limits`, `LimitError`, `ErrLimit` and the default limits. |
+| `fonts.go` | `FontLook`, `ResolveFont`, `FontKey`, `FaceSource`, face loading and glyph fallback. |
+| `engine.go` | `Engine`, `NewEngine` and the `Option`s; cancellation through `enter` and `check`. |
+| `shape.go` | The shaping pipeline and the bounded shaped-run cache. |
+| `layout.go` | `Layout`, incremental layout, `text`, blocks and tables, and the `guard` that recovers panics. |
+| `lines.go` | `Lines`: source text as a line document. |
+| `highlight.go` | `Highlight`: chroma tokens as styled spans. |
+| `view.go` | `View`: the region of the page and the raster it maps to. |
+| `palette.go` | `Palette`, `LightPalette`, `DarkPalette`. |
+| `raster.go` | `Layout.Raster`, `Links`, `Images`, `RasterOptions`; draws the display list. |
+| `select.go` | `Place`, `Selection`, `Selected`, `Layout.Select`: logical selection and carets. |
+| `preview.go` | `Preview`: the font chooser picture. |
+| `export_test.go` | Test-only access to unexported engine methods. |
+| `*_test.go` | Tests for the file of the same name; `example_test.go` holds `ExampleLines`. |
+
+Other packages:
+
+| Path | Role |
+| --- | --- |
+| `raster/raster.go` | `raster.Rasterizer`: draws go-text runs into RGBA images through a bounded glyph-mask cache. |
+| `internal/testfonts` | A `FaceSource` over the Go fonts, for tests and the example. |
+| `internal/tools/notices` | Generates `THIRD_PARTY_NOTICES.md` (`task notices`). |
+| `testdata/` | Fixtures for tests. |
 
 ## Invariants
 

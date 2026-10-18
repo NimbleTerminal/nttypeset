@@ -23,9 +23,51 @@ ships no fonts either: faces come from a `FaceSource`, and the sibling module
 go get nimbleterminal.dev/nttypeset
 ```
 
-A quick start follows once the API lands.
+## Quick start
 
-**Status:** extracted from gloss, API settling before v0.1.0.
+```go
+ctx := context.Background()
+
+// ntfonts.Embedded is the sibling module's embedded OFL subsets; it is not
+// published yet. Any FaceSource works.
+eng, _ := nttypeset.NewEngine(nttypeset.WithFonts(ntfonts.Embedded))
+
+// A Lines document: highlighted source, one block per line.
+doc, _ := nttypeset.Lines(ctx, src, "go", styles.Get("github"))
+
+// Lay it out at 400 layout pixels wide. Nothing is laid out yet.
+lay, _ := eng.Layout(doc, 400, nttypeset.LayoutOptions{})
+
+// Raster lays out as far as the view needs, then draws it.
+img, _ := lay.Raster(ctx, nttypeset.View{Width: 400, Height: 100, Scale: 1},
+    nttypeset.RasterOptions{Palette: nttypeset.LightPalette()})
+```
+
+`img` is an `*image.RGBA` of 400x100 pixels. The runnable form, with test fonts
+standing in for `ntfonts.Embedded`, is `ExampleLines` in `example_test.go`.
+Handle the errors; they are dropped here for brevity.
+
+## What you get
+
+- Incremental layout: `Layout.Ensure`, `EnsureBlock` and `Complete` lay out only
+  what a view needs, and `Raster` does so itself.
+- Hit areas: `Links` and `Images` for a view, and `Find` for a link target.
+- Selection: `Select` turns two points on the page into logical text and a
+  highlight that `Raster` draws.
+- `Highlight` and `Lines`: chroma tokens as styled spans, and source as a
+  document with an optional gutter of line numbers or unwrapped lines.
+- `Preview`: a font chooser picture of sample rows, one per `FontLook`.
+- A `goldmark` adapter for parsed Markdown: coming in a later task.
+
+Layout is bounded. A document may hold 32,768 blocks, a paragraph 16,384 runes,
+a layout 262,144 glyphs and 32,768 display-list entries, and a raster 32 Mi
+pixels; layout stops after 15 s. Limits can be lowered with `WithLimits`, never
+raised, and exceeding one is a `*LimitError` that matches `ErrLimit`. The shaped
+run cache and the glyph-mask cache are each capped at 32 MiB, and no panic
+crosses the public API.
+
+**Status:** extracted from gloss, API settling before v0.1.0. The `goldmark`
+adapter and the `ntfonts` module are still to come.
 
 ## License
 
