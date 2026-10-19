@@ -123,7 +123,8 @@ remains the only key handler; booba only advertises the bindings.
 Behavior is unchanged except for the wiring above and the status layout. The
 view reserves two rows under the picture (`SetSize(width, height-2)`): a status
 row (`title · look[+mono] · light|dark · top N`, then the error if any) and a
-help row from the bindings.
+help row from the bindings. The status row also names the output mode,
+`glyph` or `kitty`, from `pic.Mode()`.
 
 Bindings and labels:
 
@@ -138,6 +139,7 @@ Bindings and labels:
 | Dark / Light | `d` |
 | Next look | `f` |
 | Mono | `m` |
+| Glyph / Kitty | `t` |
 
 | More | Keys |
 | --- | --- |
@@ -164,12 +166,24 @@ at the picture's raster geometry.
   and let ntpicture fit it.
 - Flags: `-dark`, `-mono` (empty or `jetbrains`), `-o PNG`, `-width`
   (default 800), `-height` (default 600) for the PNG path.
-- Bindings: Primary `Dark / Light` (`d`), `Mono` (`m`); More `Keep screen &
-  quit` (`Q`), `Quit` (`q`, `ctrl+c`). One row under the picture holds status
-  and help: `specimen · light|dark[ · +jetbrains]` then the help.
+- Bindings: Primary `Dark / Light` (`d`), `Mono` (`m`), `Glyph / Kitty`
+  (`t`); More `Keep screen & quit` (`Q`), `Quit` (`q`, `ctrl+c`). One row
+  under the picture holds status and help:
+  `specimen · light|dark[ · +jetbrains] · glyph|kitty` then the help.
 - Tests: the PNG path at 800×600 light and dark each paints ink (reuse the
   pixel-count approach from `examples/typeset/main_test.go`); `-mono jetbrains`
   changes pixels against the default.
+
+### Glyph / Kitty toggle
+
+Both demos carry the toggle the sibling demos have, on `t` because `g` is
+Top in the typeset viewer. It calls `pic.ToggleMode()` and batches the
+returned command. The binding is enabled only while `pic.KittySupported()`
+is `KittyCapabilitySupported`, as ntpicture's demos gate it, so the browser
+button appears once the probe answers and never in a terminal without Kitty
+graphics; `ToggleMode` is a no-op otherwise. A mode change changes the raster
+geometry, and the existing redraw-on-geometry-change path in `Update` repaints
+the page at the new pixel size.
 
 ### Browser single thread
 
@@ -202,7 +216,9 @@ waits for the booba bridge, resizes to 100×40, waits for a view containing
 `quit`, sends the OSC 7501 query and asserts a snapshot with an enabled
 `Quit` action. For `typeset` it also asserts `Down`, `Next look` and `Dark /
 Light` are enabled, sends `j` and asserts output follows. For `specimen` it
-sends `d` and asserts output follows. With `keep` it exits with `Q`; otherwise
+sends `d` and asserts output follows. Node answers no Kitty query, so for both
+demos it asserts the `Glyph / Kitty` action is not advertised as enabled, the
+way ntpicture's framebuffer smoke checks its resolution controls. With `keep` it exits with `Q`; otherwise
 with the quit key. Exit code 0 and `bubbletea_exited` true.
 
 `.gitignore` adds `*.wasm`, `/web/demos/`, `/web/booba/`, `/web/ghostty-web/`,
@@ -232,8 +248,8 @@ not a photograph) and carries no third-party notice.
   on push to `main` and manual dispatch, build job runs `task ci` then uploads
   `web/`; deploy job publishes with `actions/deploy-pages`.
 - Enabling Pages on the repository (source: GitHub Actions) is a one-time
-  repository setting done after the branch merges. It is not part of the
-  code change.
+  repository setting the maintainer does after the branch merges. It is not
+  part of the code change.
 
 ## Size
 
