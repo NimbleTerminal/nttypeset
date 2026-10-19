@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>nttypeset · typesetting for the terminal</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <header><a class="brand" href="./">nttypeset<span>Typesetting for the terminal.</span></a><a href="https://github.com/NimbleTerminal/nttypeset">Source ↗</a></header>
+  <main>
+    <nav aria-label="Examples">
+      <a href="?demo=typeset" data-demo="typeset"><strong>Typeset a page</strong><span>The sample Markdown page, laid out with the embedded fonts. Scroll it, cycle the looks, swap the code face, go dark.</span></a>
+      <a href="?demo=specimen" data-demo="specimen"><strong>Font specimen</strong><span>One row per look: Literata, Newsreader, IBM Plex Sans and Source Serif 4 for body text, Iosevka and IBM Plex Mono for code, with JetBrains Mono as the override.</span></a>
+    </nav>
+    <section class="demo" aria-label="Live terminal example">
+      <div class="toolbar"><h1 id="title">Typeset a page</h1><span><a id="source" href="https://github.com/NimbleTerminal/nttypeset/tree/main/examples/typeset">Example source ↗</a> · <a id="restart" href="?demo=typeset">Restart ↻</a></span></div>
+      <div id="controls" role="group" aria-label="Terminal controls"></div>
+      <div class="terminal-frame"><div id="terminal"></div></div>
+      <p id="status" role="status">Starting terminal…</p>
+      <p id="help">Click the terminal to focus. Restart starts a fresh session.</p>
+    </section>
+  </main>
+  <footer>Powered by <a href="https://github.com/NimbleMarkets/go-booba">booba</a> and ghostty-web. <a href="LICENSE">Code license</a> · <a href="THIRD_PARTY_NOTICES.md">Dependency licenses</a><br>Made with ♥ and 🔥 by <a href="https://nimbleterminal.dev">Nimble Terminal</a>.</footer>
+  <script src="wasm_exec.js"></script>
+  <script type="module" src="site.js"></script>
+</body>
+</html>
