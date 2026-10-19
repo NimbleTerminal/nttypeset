@@ -81,7 +81,8 @@ image's size and alignment from its node.
 
 `examples/typeset` shows a Markdown or text file in the terminal through
 ntpicture, with keys to scroll, cycle the looks, swap the code face and switch
-palettes, or writes the top of the page as a PNG:
+palettes, a mouse drag to select text and `y` to copy it, or writes the top of
+the page as a PNG:
 
 ```sh
 task run-typeset                                        # the embedded sample page
@@ -104,7 +105,8 @@ compiled to WebAssembly and shown through booba and ghostty-web.
   what a view needs, and `Raster` does so itself.
 - Hit areas: `Links` and `Images` for a view, and `Find` for a link target.
 - Selection: `Select` turns two points on the page into logical text and a
-  highlight that `Raster` draws.
+  highlight that `Raster` draws; `View.Unproject` maps a raster pixel back to
+  the page.
 - `Highlight` and `Lines`: chroma tokens as styled spans, and source as a
   document, with an optional gutter of line numbers or unwrapped lines through
   `LayoutOptions`.

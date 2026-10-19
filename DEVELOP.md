@@ -104,7 +104,9 @@ before Primary, while the terminal help row shows Primary then More.
 `demorun.Check` and the `...KeysFitBooba` tests guard the cap. The terminal help
 row always ends with Quit and truncates the rest with an ellipsis in narrow
 terminals; the booba action bar always lists every key. The Node smoke script
-resizes the terminal to 100 columns and waits for Quit.
+resizes the terminal to 100 columns and waits for Quit. The snapshot carries
+only each action's first key, so alias keys such as the arrows and ctrl+c are
+not listed on the browser's buttons, though the demo still answers them.
 
 `.github/workflows/pages.yml` deploys `web/` to GitHub Pages on each push to
 `main` and on manual runs. It runs `task ci` first and uploads the site only if
@@ -114,8 +116,8 @@ Actions.
 
 The Node smoke script runs the wasm and checks its output; it is not a visual check.
 Before announcing a site change, run `task serve-wasm-site`, open both demos in
-a browser, scroll, cycle the looks, toggle dark and mono, and record what you
-saw.
+a browser, scroll, cycle the looks, toggle dark and mono, drag over the page
+and press `y` and check the clipboard, and record what you saw.
 
 ## Releases
 

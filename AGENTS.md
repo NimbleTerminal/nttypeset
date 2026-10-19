@@ -88,7 +88,7 @@ Root package `nttypeset`:
 | `layout.go` | `Layout`, incremental layout, `text`, blocks and tables, and the `guard` that recovers panics. |
 | `lines.go` | `Lines`: source text as a line document. |
 | `highlight.go` | `Highlight`: chroma tokens as styled spans. |
-| `view.go` | `View`: the region of the page and the raster it maps to. |
+| `view.go` | `View`: the region of the page and the raster it maps to; `Project` and `Unproject`. |
 | `palette.go` | `Palette`, `LightPalette`, `DarkPalette`. |
 | `raster.go` | `Layout.Raster`, `Links`, `Images`, `RasterOptions`; draws the display list. |
 | `select.go` | `Place`, `Selection`, `Selected`, `Layout.Select`: logical selection and carets. |
@@ -104,7 +104,7 @@ Other packages:
 | `raster/raster.go` | `raster.Rasterizer`: draws go-text runs into RGBA images through a bounded glyph-mask cache. |
 | `internal/testfonts` | A `FaceSource` over the Go fonts, for tests and the example. |
 | `internal/tools/notices` | Generates `THIRD_PARTY_NOTICES.md` (`task notices`). |
-| `examples/typeset` | The demo (separate module): a Markdown or text file in the terminal through ntpicture, or as a PNG with `-o`. |
+| `examples/typeset` | The demo (separate module): a Markdown or text file in the terminal through ntpicture, with mouse selection and `y` to copy, or as a PNG with `-o`. |
 | `examples/specimen` | The font specimen: one row per look from `Preview`, in the terminal or as a PNG with `-o`. |
 | `examples/internal/demorun` | Publishes a demo's keys as booba actions and runs it; `demorun.Check` and the `...KeysFitBooba` tests guard booba's 2048-byte status-message cap. |
 | `examples/internal/pixels` | The demos' shared test helper: counts pixels that differ from a colour. |

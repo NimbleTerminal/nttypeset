@@ -4,6 +4,7 @@ nttypeset lays out a document of blocks and styled spans and rasters any view
 of it into an image. This page is laid out with the embedded ntfonts faces and
 shown through ntpicture. Press `f` to cycle the four looks, `d` for the dark
 palette, `m` to swap the code face for JetBrains Mono, and `j`/`k` to scroll.
+Drag with the mouse to select text, and press `y` to copy it.
 
 Words such as café, naïve and résumé keep their accents; **bold**, *italic*,
 ~~struck~~ and `inline code` keep their styles across line wraps. A
