@@ -3,13 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
-	"image"
-	"image/color"
 	"testing"
 	"testing/fstest"
 
 	"nimbleterminal.dev/ntfonts"
 	"nimbleterminal.dev/nttypeset"
+	"nimbleterminal.dev/nttypeset/examples/internal/pixels"
 )
 
 func TestParseSelection(t *testing.T) {
@@ -98,14 +97,14 @@ func TestRenderPaintsAndSelectionShows(t *testing.T) {
 	if got := light.Bounds().Size(); got.X != 800 || got.Y != 300 {
 		t.Fatalf("size %v", got)
 	}
-	if countNot(light, nttypeset.LightPalette().Background) == 0 {
+	if pixels.CountNot(light, nttypeset.LightPalette().Background) == 0 {
 		t.Fatal("light page has no ink")
 	}
 	dark, err := p.render(ctx, lay, v, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if countNot(dark, nttypeset.DarkPalette().Background) == 0 {
+	if pixels.CountNot(dark, nttypeset.DarkPalette().Background) == 0 {
 		t.Fatal("dark page has no ink")
 	}
 
@@ -121,18 +120,4 @@ func TestRenderPaintsAndSelectionShows(t *testing.T) {
 	if bytes.Equal(selected.Pix, light.Pix) {
 		t.Fatal("a selection changed no pixel")
 	}
-}
-
-// countNot counts the pixels of img that are not c.
-func countNot(img *image.RGBA, c color.RGBA) int {
-	n := 0
-	b := img.Bounds()
-	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			if img.RGBAAt(x, y) != c {
-				n++
-			}
-		}
-	}
-	return n
 }

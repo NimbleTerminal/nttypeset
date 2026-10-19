@@ -89,6 +89,9 @@ task run-typeset -- -dark -font technical README.md
 task run-typeset -- -numbers -select 3.0-5.10 -o page.png layout.go
 ```
 
+`examples/specimen` shows one row per look from `Preview`:
+`task run-specimen -- -dark`, or `-o specimen.png`.
+
 ## What you get
 
 - Incremental layout: `Layout.Ensure`, `EnsureBlock` and `Complete` lay out only

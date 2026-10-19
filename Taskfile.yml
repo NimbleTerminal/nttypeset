@@ -73,13 +73,17 @@ tasks:
       - go build -mod=readonly ./...
       - task: build-examples
   build-examples:
-    desc: Build bin/nttypeset-typeset
+    desc: Build bin/nttypeset-typeset and bin/nttypeset-specimen
     cmds:
       - mkdir -p bin
       - go -C examples build -mod=readonly -o ../bin/nttypeset-typeset ./typeset
+      - go -C examples build -mod=readonly -o ../bin/nttypeset-specimen ./specimen
   run-typeset:
     desc: Run the demo (task run-typeset -- -dark FILE)
     cmds: ['go -C examples run -mod=readonly ./typeset {{.CLI_ARGS}}']
+  run-specimen:
+    desc: Run the font specimen (task run-specimen -- -dark)
+    cmds: ['go -C examples run -mod=readonly ./specimen {{.CLI_ARGS}}']
   cross-windows:
     desc: Check Windows compilation
     env: {GOOS: windows, GOARCH: amd64, CGO_ENABLED: '0'}
@@ -87,6 +91,7 @@ tasks:
       - go build -mod=readonly ./...
       - mkdir -p dist
       - go -C examples build -mod=readonly -o ../dist/nttypeset-typeset.exe ./typeset
+      - go -C examples build -mod=readonly -o ../dist/nttypeset-specimen.exe ./specimen
   cross-wasm:
     desc: Check js/wasm compilation
     env: {GOOS: js, GOARCH: wasm, CGO_ENABLED: '0'}
