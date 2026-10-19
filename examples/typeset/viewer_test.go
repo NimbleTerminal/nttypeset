@@ -228,6 +228,11 @@ func TestViewerDragClampsAtEdge(t *testing.T) {
 	if !m.dragging || len(m.selected) <= len(inside) {
 		t.Fatalf("drag past the edge: dragging %v, %q then %q", m.dragging, inside, m.selected)
 	}
+	// The point is the nearest edge pixel's, not one past it.
+	want, ok := m.pageAt(99, 37, true)
+	if !ok || m.dragTo != want {
+		t.Fatalf("dragTo %v, want %v (ok %v)", m.dragTo, want, ok)
+	}
 }
 
 func TestViewerWheelScrolls(t *testing.T) {

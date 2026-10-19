@@ -224,8 +224,8 @@ func (m *viewer) pageAt(x, y int, clamp bool) (image.Point, bool) {
 }
 
 // mouse follows a left drag over the page and says whether the message was
-// the page's, so that nothing else answers it. Shift and Alt drags and other
-// buttons are left to the terminal.
+// the page's, so that nothing else answers it. The page ignores buttons other
+// than the left; Shift and Alt drags are left to the terminal.
 func (m *viewer) mouse(msg tea.Msg) (tea.Cmd, bool) {
 	if !m.live() {
 		m.dragging = false
