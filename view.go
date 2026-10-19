@@ -36,10 +36,12 @@ func (v View) Project(r image.Rectangle) image.Rectangle {
 	return image.Rect(int(math.Round(float64(r.Min.X)*scale)), int(math.Round(float64(r.Min.Y)*scale)), int(math.Round(float64(r.Max.X)*scale)), int(math.Round(float64(r.Max.Y)*scale)))
 }
 
-// Unproject maps a raster pixel back to the page point it was projected from,
-// the inverse of Project: each coordinate is divided by Scale, rounded, and
-// offset by the view's top left. A view whose Scale is not positive and finite
-// maps every pixel to the top left.
+// Unproject maps a raster pixel to the page point it was projected from: each
+// coordinate divided by Scale and rounded, then offset by the view's top left.
+// It inverts Project for the top left of a projected rectangle at a Scale of 1
+// or more; below 1 a raster pixel covers several page pixels and the nearest is
+// returned. A Scale that is not positive and finite returns the view's top
+// left.
 func (v View) Unproject(p image.Point) image.Point {
 	if !(v.Scale > 0) || math.IsInf(v.Scale, 0) {
 		return image.Pt(v.Left, v.Top)
