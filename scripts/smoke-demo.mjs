@@ -56,6 +56,18 @@ try {
     }
     bubbletea_write('j');
     assert.ok((await outputFollows()).length > 0, 'scrolling produces output');
+    assert.ok(enabled('Copy'), 'copy action');
+    bubbletea_write('\x1b[<0;5;2M');
+    bubbletea_write('\x1b[<32;40;12M');
+    assert.ok((await outputFollows()).length > 0, 'drag produces output');
+    bubbletea_write('\x1b[<0;40;12m');
+    bubbletea_write('y');
+    let copied = '';
+    for (let n = 0; n < 100 && !/\x1b\]52;c;[A-Za-z0-9+/=]+/.test(copied); n++) {
+      await delay(25);
+      copied += bubbletea_read();
+    }
+    assert.ok(/\x1b\]52;c;[A-Za-z0-9+/=]+/.test(copied), 'y writes the selection to the clipboard');
   } else {
     bubbletea_write('d');
     assert.ok((await outputFollows()).length > 0, 'dark toggle produces output');

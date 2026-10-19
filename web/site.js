@@ -2,7 +2,7 @@ import { BoobaTerminal, installActionBar, installRendererHud, parseRendererFromU
 
 const demos = { typeset: 'Typeset a page', specimen: 'Font specimen' };
 const help = {
-  typeset: 'j/k or arrows scroll · space and PgUp page · g/G ends · d dark · f next look · m mono · t glyph/Kitty · n numbers · c chop · Q keeps the screen · q quits. Click the terminal to focus.',
+  typeset: 'j/k or arrows scroll · space and PgUp page · g/G ends · d dark · f next look · m mono · t glyph/Kitty · n numbers · c chop · drag selects · y copies · Esc clears · Q keeps the screen · q quits. Click the terminal to focus.',
   specimen: 'd dark · m mono · t glyph/Kitty · Q keeps the screen · q quits. Click the terminal to focus.',
 };
 const requested = new URLSearchParams(location.search).get('demo');
@@ -31,7 +31,7 @@ async function main() {
   const { instance } = await WebAssembly.instantiateStreaming(response, go.importObject);
   const running = go.run(instance);
   running.then(() => { status.textContent = 'Session ended. Choose Restart to run again.'; }, failed);
-  const terminal = new BoobaTerminal('terminal', { renderer: parseRendererFromURL(), allowOSC7501Actions: true });
+  const terminal = new BoobaTerminal('terminal', { renderer: parseRendererFromURL(), allowOSC7501Actions: true, allowOSC52: true });
   await terminal.init();
   terminal.setActionKeyEncoder({
     canEncode: gesture => terminal.encodeKey(gesture) !== null,
