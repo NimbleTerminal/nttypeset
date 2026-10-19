@@ -37,38 +37,53 @@ func show(ctx context.Context, p *page, eng *nttypeset.Engine, o options) error 
 	return demorun.Run(&viewer{ctx: ctx, page: p, eng: eng, pic: pic, o: o}, "typeset", "Typeset a page")
 }
 
+// bindings are the viewer's keys by name.
+type bindings struct {
+	down, up, pgdown, pgup, top, end key.Binding
+	dark, look, mono, toggle         key.Binding
+	numbers, chop, keep, quit        key.Binding
+}
+
+// newBindings makes the bindings; the Kitty toggle is enabled only where
+// Kitty graphics are supported.
+func newBindings(kitty bool) bindings {
+	b := bindings{
+		down:    demorun.Binding("Down", "j", "down"),
+		up:      demorun.Binding("Up", "k", "up"),
+		pgdown:  demorun.Binding("Page down", "space", "pgdown"),
+		pgup:    demorun.Binding("Page up", "pgup"),
+		top:     demorun.Binding("Top", "g", "home"),
+		end:     demorun.Binding("End", "G", "end"),
+		dark:    demorun.Binding("Dark / Light", "d"),
+		look:    demorun.Binding("Next look", "f"),
+		mono:    demorun.Binding("Mono", "m"),
+		toggle:  demorun.Binding("Glyph / Kitty", "t"),
+		numbers: demorun.Binding("Line numbers", "n"),
+		chop:    demorun.Binding("Chop lines", "c"),
+		keep:    demorun.Binding("Keep screen & quit", "Q"),
+		quit:    demorun.Binding("Quit", "q", "ctrl+c"),
+	}
+	b.toggle.SetEnabled(kitty)
+	return b
+}
+
+// keys flattens the bindings into the primary buttons and the rest.
+func (b bindings) keys() demorun.Keys {
+	return demorun.Keys{
+		Primary: []key.Binding{b.down, b.up, b.pgdown, b.pgup, b.top, b.end, b.dark, b.look, b.mono, b.toggle},
+		More:    []key.Binding{b.numbers, b.chop, b.keep, b.quit},
+	}
+}
+
+// bindings returns the current bindings.
+func (m *viewer) bindings() bindings {
+	return newBindings(m.pic.KittySupported() == nt.KittyCapabilitySupported)
+}
+
 // HelpKeys lists the viewer's bindings: the help row and the browser buttons
 // both come from here. The Kitty toggle is offered only where Kitty graphics
 // are supported.
-func (m *viewer) HelpKeys() demorun.Keys {
-	return keys(m.pic.KittySupported() == nt.KittyCapabilitySupported)
-}
-
-// keys is HelpKeys with the toggle's availability given.
-func keys(kitty bool) demorun.Keys {
-	toggle := demorun.Binding("Glyph / Kitty", "t")
-	toggle.SetEnabled(kitty)
-	return demorun.Keys{
-		Primary: []key.Binding{
-			demorun.Binding("Down", "j", "down"),
-			demorun.Binding("Up", "k", "up"),
-			demorun.Binding("Page down", "space", "pgdown"),
-			demorun.Binding("Page up", "pgup"),
-			demorun.Binding("Top", "g", "home"),
-			demorun.Binding("End", "G", "end"),
-			demorun.Binding("Dark / Light", "d"),
-			demorun.Binding("Next look", "f"),
-			demorun.Binding("Mono", "m"),
-			toggle,
-		},
-		More: []key.Binding{
-			demorun.Binding("Line numbers", "n"),
-			demorun.Binding("Chop lines", "c"),
-			demorun.Binding("Keep screen & quit", "Q"),
-			demorun.Binding("Quit", "q", "ctrl+c"),
-		},
-	}
-}
+func (m *viewer) HelpKeys() demorun.Keys { return m.bindings().keys() }
 
 func (m *viewer) Init() tea.Cmd { return m.pic.Init() }
 
@@ -89,50 +104,47 @@ func (m *viewer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *viewer) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	k := m.HelpKeys()
-	down, up, pgdown, pgup, top, end := k.Primary[0], k.Primary[1], k.Primary[2], k.Primary[3], k.Primary[4], k.Primary[5]
-	dark, look, mono, toggle := k.Primary[6], k.Primary[7], k.Primary[8], k.Primary[9]
-	numbers, chop, keep, quit := k.More[0], k.More[1], k.More[2], k.More[3]
+	b := m.bindings()
 	switch {
-	case key.Matches(msg, quit):
+	case key.Matches(msg, b.quit):
 		return m, tea.Sequence(m.pic.Close(), tea.Quit)
-	case key.Matches(msg, keep):
+	case key.Matches(msg, b.keep):
 		return m, tea.Sequence(m.pic.Keep(), tea.Quit)
-	case key.Matches(msg, down):
+	case key.Matches(msg, b.down):
 		m.top += scrollStep
-	case key.Matches(msg, up):
+	case key.Matches(msg, b.up):
 		m.top = max(0, m.top-scrollStep)
-	case key.Matches(msg, pgdown):
+	case key.Matches(msg, b.pgdown):
 		m.top += m.height
-	case key.Matches(msg, pgup):
+	case key.Matches(msg, b.pgup):
 		m.top = max(0, m.top-m.height)
-	case key.Matches(msg, top):
+	case key.Matches(msg, b.top):
 		m.top = 0
-	case key.Matches(msg, end):
+	case key.Matches(msg, b.end):
 		if m.lay != nil {
 			if m.err = m.lay.Complete(m.ctx); m.err == nil {
 				m.top = max(0, m.lay.Extent()-m.height)
 			}
 		}
-	case key.Matches(msg, dark):
+	case key.Matches(msg, b.dark):
 		m.o.dark = !m.o.dark
-	case key.Matches(msg, look):
+	case key.Matches(msg, b.look):
 		m.nextLook()
-	case key.Matches(msg, mono):
+	case key.Matches(msg, b.mono):
 		if m.o.mono == "" {
 			m.o.mono = "jetbrains"
 		} else {
 			m.o.mono = ""
 		}
 		m.setFonts()
-	case key.Matches(msg, toggle):
+	case key.Matches(msg, b.toggle):
 		if c := m.pic.ToggleMode(); c != nil {
 			return m, tea.Batch(c, m.redraw())
 		}
-	case key.Matches(msg, numbers):
+	case key.Matches(msg, b.numbers):
 		m.page.opts.Numbers = !m.page.opts.Numbers
 		m.lay = nil
-	case key.Matches(msg, chop):
+	case key.Matches(msg, b.chop):
 		m.page.opts.Chop = !m.page.opts.Chop
 		m.lay = nil
 	default:

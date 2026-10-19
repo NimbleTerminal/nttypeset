@@ -4,8 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/NimbleMarkets/go-booba/actions/bubblehelp"
 	nt "nimbleterminal.dev/ntpicture"
+	"nimbleterminal.dev/nttypeset"
 	"nimbleterminal.dev/nttypeset/examples/internal/demorun"
 )
 
@@ -44,7 +46,7 @@ func TestViewerStatusNamesMode(t *testing.T) {
 // bytes booba allows.
 func TestViewerKeysFitBooba(t *testing.T) {
 	m := &viewer{pic: nt.New(nt.Options{AutoMode: true}), o: options{font: "readable"}}
-	if err := demorun.Check(stubModel{m, keys(true)}, "typeset", "Typeset a page"); err != nil {
+	if err := demorun.Check(stubModel{m, newBindings(true).keys()}, "typeset", "Typeset a page"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -56,3 +58,35 @@ type stubModel struct {
 }
 
 func (s stubModel) HelpKeys() demorun.Keys { return s.k }
+
+func press(m *viewer, r rune) tea.Cmd {
+	_, cmd := m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	return cmd
+}
+
+// Keys act by name: each press does what its binding says.
+func TestViewerKeyDispatch(t *testing.T) {
+	m := &viewer{
+		pic: nt.New(nt.Options{AutoMode: true}), o: options{font: "readable"}, height: 400,
+		page: &page{doc: &nttypeset.Document{}},
+	}
+	press(m, 'j')
+	if m.top != scrollStep {
+		t.Fatalf("top %d after j", m.top)
+	}
+	// Kitty is unsupported on a fresh picture: t does nothing.
+	if cmd := press(m, 't'); cmd != nil || m.top != scrollStep {
+		t.Fatalf("t: cmd %v, top %d", cmd, m.top)
+	}
+	press(m, 'n')
+	if !m.page.opts.Numbers {
+		t.Fatal("n did not turn line numbers on")
+	}
+	press(m, 'n')
+	if m.page.opts.Numbers {
+		t.Fatal("n did not turn line numbers off")
+	}
+	if cmd := press(m, 'q'); cmd == nil {
+		t.Fatal("q returned no command")
+	}
+}
