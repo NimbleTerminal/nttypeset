@@ -103,10 +103,10 @@ lists only the More group. The expanded browser action bar therefore shows More
 before Primary, while the terminal help row shows Primary then More.
 `demorun.Check` and the `...KeysFitBooba` tests guard the cap. The terminal help
 row always ends with Quit and truncates the rest with an ellipsis in narrow
-terminals; the booba action bar always lists every key. The Node smoke script
-resizes the terminal to 100 columns and waits for Quit. The snapshot carries
+terminals; the booba action bar always lists every action. The snapshot carries
 only each action's first key, so alias keys such as the arrows and ctrl+c are
-not listed on the browser's buttons, though the demo still answers them.
+not listed on the browser's buttons, though the demo still answers them. The
+Node smoke script resizes the terminal to 100 columns and waits for Quit.
 
 `.github/workflows/pages.yml` deploys `web/` to GitHub Pages on each push to
 `main` and on manual runs. It runs `task ci` first and uploads the site only if
