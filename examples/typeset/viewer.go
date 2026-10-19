@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	nt "nimbleterminal.dev/ntpicture"
 	"nimbleterminal.dev/nttypeset"
+	"nimbleterminal.dev/nttypeset/examples/internal/demorun"
 )
 
 // scrollStep is one j/k press, in layout pixels.
@@ -24,6 +26,7 @@ type viewer struct {
 	lay    *nttypeset.Layout
 	top    int               // the page row at the top of the view, in layout pixels
 	height int               // the view's height, in layout pixels
+	width  int               // the terminal's width, in columns
 	geom   nt.RasterGeometry // what the shown raster was made for
 	err    error
 }
@@ -31,8 +34,40 @@ type viewer struct {
 func show(ctx context.Context, p *page, eng *nttypeset.Engine, o options) error {
 	pic := nt.New(nt.Options{AutoMode: true})
 	defer func() { _ = pic.Close() }()
-	_, err := tea.NewProgram(&viewer{ctx: ctx, page: p, eng: eng, pic: pic, o: o}).Run()
-	return err
+	return demorun.Run(&viewer{ctx: ctx, page: p, eng: eng, pic: pic, o: o}, "typeset", "Typeset a page")
+}
+
+// HelpKeys lists the viewer's bindings: the help row and the browser buttons
+// both come from here. The Kitty toggle is offered only where Kitty graphics
+// are supported.
+func (m *viewer) HelpKeys() demorun.Keys {
+	return keys(m.pic.KittySupported() == nt.KittyCapabilitySupported)
+}
+
+// keys is HelpKeys with the toggle's availability given.
+func keys(kitty bool) demorun.Keys {
+	toggle := demorun.Binding("Glyph / Kitty", "t")
+	toggle.SetEnabled(kitty)
+	return demorun.Keys{
+		Primary: []key.Binding{
+			demorun.Binding("Down", "j", "down"),
+			demorun.Binding("Up", "k", "up"),
+			demorun.Binding("Page down", "space", "pgdown"),
+			demorun.Binding("Page up", "pgup"),
+			demorun.Binding("Top", "g", "home"),
+			demorun.Binding("End", "G", "end"),
+			demorun.Binding("Dark / Light", "d"),
+			demorun.Binding("Next look", "f"),
+			demorun.Binding("Mono", "m"),
+			toggle,
+		},
+		More: []key.Binding{
+			demorun.Binding("Line numbers", "n"),
+			demorun.Binding("Chop lines", "c"),
+			demorun.Binding("Keep screen & quit", "Q"),
+			demorun.Binding("Quit", "q", "ctrl+c"),
+		},
+	}
 }
 
 func (m *viewer) Init() tea.Cmd { return m.pic.Init() }
@@ -40,10 +75,11 @@ func (m *viewer) Init() tea.Cmd { return m.pic.Init() }
 func (m *viewer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		return m.key(msg.String())
+		return m.key(msg)
 	case tea.WindowSizeMsg:
+		m.width = msg.Width
 		cmd := m.pic.Update(msg)
-		return m, tea.Batch(cmd, m.pic.SetSize(max(0, msg.Width), max(0, msg.Height-1)), m.redraw())
+		return m, tea.Batch(cmd, m.pic.SetSize(max(0, msg.Width), max(0, msg.Height-2)), m.redraw())
 	}
 	cmd := m.pic.Update(msg)
 	if m.pic.RasterGeometry() != m.geom {
@@ -52,43 +88,51 @@ func (m *viewer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *viewer) key(k string) (tea.Model, tea.Cmd) {
-	switch k {
-	case "q", "ctrl+c":
+func (m *viewer) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	k := m.HelpKeys()
+	down, up, pgdown, pgup, top, end := k.Primary[0], k.Primary[1], k.Primary[2], k.Primary[3], k.Primary[4], k.Primary[5]
+	dark, look, mono, toggle := k.Primary[6], k.Primary[7], k.Primary[8], k.Primary[9]
+	numbers, chop, keep, quit := k.More[0], k.More[1], k.More[2], k.More[3]
+	switch {
+	case key.Matches(msg, quit):
 		return m, tea.Sequence(m.pic.Close(), tea.Quit)
-	case "Q":
+	case key.Matches(msg, keep):
 		return m, tea.Sequence(m.pic.Keep(), tea.Quit)
-	case "j", "down":
+	case key.Matches(msg, down):
 		m.top += scrollStep
-	case "k", "up":
+	case key.Matches(msg, up):
 		m.top = max(0, m.top-scrollStep)
-	case "space", "pgdown":
+	case key.Matches(msg, pgdown):
 		m.top += m.height
-	case "pgup":
+	case key.Matches(msg, pgup):
 		m.top = max(0, m.top-m.height)
-	case "g", "home":
+	case key.Matches(msg, top):
 		m.top = 0
-	case "G", "end":
+	case key.Matches(msg, end):
 		if m.lay != nil {
 			if m.err = m.lay.Complete(m.ctx); m.err == nil {
 				m.top = max(0, m.lay.Extent()-m.height)
 			}
 		}
-	case "d":
+	case key.Matches(msg, dark):
 		m.o.dark = !m.o.dark
-	case "f":
+	case key.Matches(msg, look):
 		m.nextLook()
-	case "m":
+	case key.Matches(msg, mono):
 		if m.o.mono == "" {
 			m.o.mono = "jetbrains"
 		} else {
 			m.o.mono = ""
 		}
 		m.setFonts()
-	case "n":
+	case key.Matches(msg, toggle):
+		if c := m.pic.ToggleMode(); c != nil {
+			return m, tea.Batch(c, m.redraw())
+		}
+	case key.Matches(msg, numbers):
 		m.page.opts.Numbers = !m.page.opts.Numbers
 		m.lay = nil
-	case "c":
+	case key.Matches(msg, chop):
 		m.page.opts.Chop = !m.page.opts.Chop
 		m.lay = nil
 	default:
@@ -163,12 +207,15 @@ func (m *viewer) View() tea.View {
 	if m.o.dark {
 		palette = "dark"
 	}
-	status := fmt.Sprintf("%s · %s%s · %s · top %d", m.page.title, m.o.font, suffix(m.o.mono), palette, m.top)
+	mode := "glyph"
+	if m.pic.Mode() == nt.PictureKitty {
+		mode = "kitty"
+	}
+	status := fmt.Sprintf("%s · %s%s · %s · %s · top %d", m.page.title, m.o.font, suffix(m.o.mono), palette, mode, m.top)
 	if m.err != nil {
 		status += " · " + m.err.Error()
 	}
-	status += "   j/k scroll  space page  g/G ends  d dark  f font  m mono  n numbers  c chop  q quit  Q keep"
-	v := tea.NewView(m.pic.View() + "\n" + status)
+	v := tea.NewView(m.pic.View() + "\n" + status + "\n" + m.HelpKeys().View(m.width))
 	v.AltScreen = true
 	return v
 }

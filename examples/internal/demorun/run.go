@@ -2,6 +2,7 @@
 package demorun
 
 import (
+	"crypto/rand"
 	"fmt"
 	"os"
 
@@ -22,8 +23,10 @@ type Keys struct {
 // ShortHelp returns the primary bindings.
 func (k Keys) ShortHelp() []key.Binding { return k.Primary }
 
-// FullHelp returns the primary bindings, then the rest.
-func (k Keys) FullHelp() [][]key.Binding { return [][]key.Binding{k.Primary, k.More} }
+// FullHelp returns the rest of the bindings. A host adds the primary bindings
+// that no group names, so listing them again would only spend the 2048 bytes
+// that booba allows a status message.
+func (k Keys) FullHelp() [][]key.Binding { return [][]key.Binding{k.More} }
 
 // View renders Primary followed by More as one help row, truncated with an
 // ellipsis at width.
@@ -47,6 +50,28 @@ type Model interface {
 	HelpKeys() Keys
 }
 
+// adapter shows only the first shortcut of an action that has aliases. An
+// action with one shortcut needs no preference, and leaving it out keeps the
+// status message within booba's 2048 bytes.
+var adapter = bubblehelp.Options{Customize: func(_ key.Binding, a *actions.Action) error {
+	if len(a.Keys) > 1 {
+		first := 0
+		a.Preferred = &first
+	}
+	return nil
+}}
+
+// Check reports whether the status message Run would send for m fits within
+// booba's 2048 bytes. It uses an instance as long as the generated ones.
+func Check(m Model, context, summary string) error {
+	snapshot, _, err := bubblehelp.Snapshot(m.HelpKeys(), rand.Text(), context, 1, adapter)
+	if err != nil {
+		return err
+	}
+	_, err = actions.EncodeProgramStatus(snapshot, actions.ProgramStatus{App: "nttypeset", Summary: summary})
+	return err
+}
+
 // Run advertises the model's key presses as booba actions and runs it. The
 // model remains their sole handler.
 func Run(m Model, context, summary string) error {
@@ -55,11 +80,7 @@ func Run(m Model, context, summary string) error {
 			Context: context, Keys: inner.(Model).HelpKeys(),
 			Status: actions.ProgramStatus{App: "nttypeset", Summary: summary},
 		}
-	}, bubblehelp.ModelOptions{Adapter: bubblehelp.Options{Customize: func(_ key.Binding, a *actions.Action) error {
-		first := 0
-		a.Preferred = &first
-		return nil
-	}}, OnError: func(err error) { fmt.Fprintln(os.Stderr, err) }})
+	}, bubblehelp.ModelOptions{Adapter: adapter, OnError: func(err error) { fmt.Fprintln(os.Stderr, err) }})
 	if err != nil {
 		return err
 	}
