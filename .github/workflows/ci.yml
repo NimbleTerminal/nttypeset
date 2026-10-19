@@ -27,6 +27,10 @@ jobs:
           cache-dependency-path: |
             go.sum
             examples/go.sum
+            wasm.work.sum
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
       - uses: go-task/setup-task@v2
         with:
           version: '3.x'

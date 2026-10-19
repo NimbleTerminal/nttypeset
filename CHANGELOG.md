@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `examples/specimen`, a font specimen from `Preview`, one row per look.
+- A browser demo site at nimbleterminal.github.io/nttypeset: both demos compiled to WebAssembly and run through booba and ghostty-web, built and checked by `task ci` and deployed by GitHub Pages. The demos publish their keys as booba actions and gain a `t` glyph/Kitty toggle. `THIRD_PARTY_NOTICES.md` now credits the demos' dependencies and the browser runtime.
 - `examples/typeset`, a demo in its own module: a Markdown or text file in the terminal through ntpicture, with keys for scrolling, looks, the code face and the palette, or the top of the page as a PNG with `-o`.
 - `THIRD_PARTY_NOTICES.md` credits the modules linked on every supported platform, not only the generating machine's: it now includes `golang.org/x/sys`, which `x/image/vector` uses on amd64.
 

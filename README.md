@@ -92,6 +92,12 @@ task run-typeset -- -numbers -select 3.0-5.10 -o page.png layout.go
 `examples/specimen` shows one row per look from `Preview`:
 `task run-specimen -- -dark`, or `-o specimen.png`.
 
+### Browser demos
+
+Both demos run in the browser at `https://nimbleterminal.github.io/nttypeset/`,
+compiled to WebAssembly and shown through booba and ghostty-web.
+`task serve-wasm-site` serves the same site locally.
+
 ## What you get
 
 - Incremental layout: `Layout.Ensure`, `EnsureBlock` and `Complete` lay out only

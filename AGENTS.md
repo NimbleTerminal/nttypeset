@@ -26,7 +26,8 @@ Longer-form docs: `README.md` (overview), `DEVELOP.md` (tooling and releases),
 ## Commands
 
 All tasks run through [Go Task](https://taskfile.dev) (`Taskfile.yml`). Tasks
-set `GOWORK=off`.
+set `GOWORK=off`, except the browser tasks, which use `wasm.work`. The site
+checks need Node 24.
 
 ```sh
 task ci                  # full gate, same as GitHub Actions (vulncheck needs network)
@@ -37,7 +38,12 @@ task vet fmt fmt-check go-tidy-check go-verify
 task build cross-windows cross-wasm
 task notices             # regenerate THIRD_PARTY_NOTICES.md after dependency changes
 task run-typeset         # the demo: task run-typeset -- -dark FILE
-task build-examples      # bin/nttypeset-typeset
+task run-specimen        # the font specimen: task run-specimen -- -dark
+task build-examples      # bin/nttypeset-typeset, bin/nttypeset-specimen
+task build-wasm-site     # the browser site in web/, then check-site
+task check-site          # Node checks of web/ and both demos
+task serve-wasm-site     # serve web/ at http://localhost:8000/nttypeset/
+task test-wasm           # examples tests under js/wasm with Node
 task clean
 ```
 
@@ -50,17 +56,21 @@ GOWORK=off go test -mod=readonly -run 'TestName' .
 ## Module layout
 
 Two Go modules: the library, `nimbleterminal.dev/nttypeset`, and
-`examples/` (`nimbleterminal.dev/nttypeset/examples`), which holds the demo and
+`examples/` (`nimbleterminal.dev/nttypeset/examples`), which holds the demos and
 replaces nttypeset with the parent directory so it tracks the working tree.
-There is no browser build. Never add sibling `replace` directives: ntfonts and
-ntpicture are pinned by version.
+The browser build uses `wasm.work`, a workspace that swaps in a browser Bubble
+Tea fork for js/wasm builds only; native builds use the upstream Bubble Tea.
+Never add sibling `replace` directives: ntfonts and ntpicture are pinned by
+version.
 
 Dependencies: go-text typesetting v0.3.5 and render v0.2.1, chroma v2.27.0, and
 x/image v0.47.0. goldmark v1.8.2 and goldmark-emoji v1.0.5 are allowed only in
 the `goldmark` subpackage. The library never imports ntpicture, Bubble Tea,
-ntfonts, or gloss; the examples module imports all but gloss.
+ntfonts, or gloss; the examples module imports all but gloss, and adds booba
+(go-booba) and bubbles for the browser build.
 
-Generated output is ignored: `bin/`, `dist/`, `.task/`.
+Generated output is ignored: `bin/`, `dist/`, `.task/`, and the site's build
+output under `web/`.
 
 ## File map
 
@@ -94,6 +104,12 @@ Other packages:
 | `internal/testfonts` | A `FaceSource` over the Go fonts, for tests and the example. |
 | `internal/tools/notices` | Generates `THIRD_PARTY_NOTICES.md` (`task notices`). |
 | `examples/typeset` | The demo (separate module): a Markdown or text file in the terminal through ntpicture, or as a PNG with `-o`. |
+| `examples/specimen` | The font specimen: one row per look from `Preview`, in the terminal or as a PNG with `-o`. |
+| `examples/internal/demorun` | Publishes a demo's keys as booba actions and runs it; `demorun.Check` and the `...KeysFitBooba` tests guard booba's 2048-byte status-message cap. |
+| `examples/internal/pixels` | The demos' shared test helper: counts pixels that differ from a colour. |
+| `web/` | The Pages site: `index.html`, `site.js`, `site.css` and `licenses/` are source; `demos/`, `booba/`, `ghostty-web/` and the copied files are build output. |
+| `scripts/` | Node scripts: `check-site.mjs` checks the built site; `smoke-demo.mjs` runs a demo's wasm under Node. |
+| `wasm.work` | The Go workspace for js/wasm builds; swaps in the browser Bubble Tea fork. |
 | `testdata/` | Fixtures for tests. |
 
 ## Invariants
@@ -117,6 +133,8 @@ Breaking these breaks consumers, even if tests still pass.
   nanoseconds on 32-bit targets.
 - **Caches are bounded.** The shaped-run cache and the glyph-mask cache are each
   capped at 32 MiB.
+- **Generated site assets are never committed.** `web/demos`, `web/booba`,
+  `web/ghostty-web` and the copied files are build output.
 - **The display list is private.** It is not exported API.
 - **The core imports only go-text, chroma and x/image** (plus the standard
   library). goldmark belongs to the `goldmark` subpackage alone.
