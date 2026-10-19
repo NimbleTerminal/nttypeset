@@ -72,11 +72,14 @@ type Model interface {
 
 // adapter shows only the first shortcut of an action that has aliases. An
 // action with one shortcut needs no preference, and leaving it out keeps the
-// status message within booba's 2048 bytes.
+// status message within booba's 2048 bytes. The snapshot then carries only
+// that first key: the bar's buttons send it, the model still matches every
+// alias, and the snapshot has to fit booba's 2048 bytes.
 var adapter = bubblehelp.Options{Customize: func(_ key.Binding, a *actions.Action) error {
 	if len(a.Keys) > 1 {
 		first := 0
 		a.Preferred = &first
+		a.Keys = a.Keys[:1]
 	}
 	return nil
 }}

@@ -1,11 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"fmt"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/NimbleMarkets/go-booba/actions/bubblehelp"
+	"github.com/charmbracelet/x/ansi"
+	"nimbleterminal.dev/ntfonts"
 	nt "nimbleterminal.dev/ntpicture"
 	"nimbleterminal.dev/nttypeset"
 	"nimbleterminal.dev/nttypeset/examples/internal/demorun"
@@ -22,7 +28,7 @@ func TestViewerKeysFollowKitty(t *testing.T) {
 	for _, a := range snapshot.Actions {
 		labels[a.Label] = a.Enabled
 	}
-	for _, want := range []string{"Down", "Up", "Page down", "Page up", "Top", "End", "Dark / Light", "Next look", "Mono", "Line numbers", "Chop lines", "Keep screen & quit", "Quit"} {
+	for _, want := range []string{"Down", "Up", "Page down", "Page up", "Top", "End", "Dark / Light", "Next look", "Mono", "Line numbers", "Chop lines", "Copy", "Clear selection", "Keep screen & quit", "Quit"} {
 		if !labels[want] {
 			t.Errorf("%s not enabled in %v", want, labels)
 		}
@@ -86,7 +92,176 @@ func TestViewerKeyDispatch(t *testing.T) {
 	if m.page.opts.Numbers {
 		t.Fatal("n did not turn line numbers off")
 	}
+	// With no selection, Esc and y do nothing, and Esc does not quit.
+	if _, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); cmd != nil || m.top != scrollStep {
+		t.Fatalf("esc: cmd %v, top %d", cmd, m.top)
+	}
+	if cmd := press(m, 'y'); cmd != nil {
+		t.Fatal("y with no selection returned a command")
+	}
 	if cmd := press(m, 'q'); cmd == nil {
 		t.Fatal("q returned no command")
+	}
+}
+
+// newTestViewer is a viewer with a real engine and the sample page at a glyph
+// geometry of 100 by 38 cells, drawn once.
+func newTestViewer(t *testing.T) *viewer {
+	t.Helper()
+	ctx := context.Background()
+	eng, err := nttypeset.NewEngine(nttypeset.WithFonts(ntfonts.Embedded), nttypeset.WithLook("readable", ""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := open(ctx, "", options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pic := nt.New(nt.Options{AutoMode: true})
+	t.Cleanup(func() { _ = pic.Close() })
+	pic.SetSize(100, 38)
+	m := &viewer{ctx: ctx, page: p, eng: eng, pic: pic, o: options{font: "readable", width: 800}, width: 100}
+	m.redraw()
+	if m.err != nil || m.last == nil {
+		t.Fatalf("first draw: %v", m.err)
+	}
+	return m
+}
+
+func mouse(m *viewer, msg tea.Msg) tea.Cmd {
+	_, cmd := m.Update(msg)
+	return cmd
+}
+
+func click(x, y int) tea.MouseClickMsg { return tea.MouseClickMsg{X: x, Y: y, Button: tea.MouseLeft} }
+func motion(x, y int) tea.MouseMotionMsg {
+	return tea.MouseMotionMsg{X: x, Y: y, Button: tea.MouseLeft}
+}
+func release(x, y int) tea.MouseReleaseMsg {
+	return tea.MouseReleaseMsg{X: x, Y: y, Button: tea.MouseLeft}
+}
+
+func TestViewerDragSelectsAndCopies(t *testing.T) {
+	m := newTestViewer(t)
+	plain := m.last // the raster drawn before any selection
+	mouse(m, click(4, 1))
+	mouse(m, motion(40, 20))
+	if !strings.Contains(m.selected, "nttypeset") {
+		t.Fatalf("drag selected %q", m.selected)
+	}
+	if m.sel == nil || !m.sel.Anchor.Placed || !m.sel.Focus.Placed {
+		t.Fatalf("selection not placed: %+v", m.sel)
+	}
+	if bytes.Equal(m.last.Pix, plain.Pix) {
+		t.Fatal("highlight not drawn")
+	}
+	grown := m.selected
+	mouse(m, motion(70, 30))
+	if len(m.selected) <= len(grown) {
+		t.Fatalf("selection did not grow: %q then %q", grown, m.selected)
+	}
+	mouse(m, release(70, 30))
+	if !strings.Contains(m.View().Content, "selected · y copies") {
+		t.Fatalf("status lacks the selection:\n%s", m.View().Content)
+	}
+	before := m.selected
+	press(m, 'j')
+	if m.selected != before {
+		t.Fatalf("scroll changed the selection %q", m.selected)
+	}
+	cmd := press(m, 'y')
+	if cmd == nil || fmt.Sprint(cmd()) != before {
+		t.Fatal("y did not copy the selection")
+	}
+	if !strings.Contains(m.View().Content, fmt.Sprintf("copied %d characters", utf8.RuneCountInString(before))) {
+		t.Fatalf("note missing:\n%s", m.View().Content)
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if m.sel != nil || m.selected != "" {
+		t.Fatal("esc kept the selection")
+	}
+	if press(m, 'y') != nil {
+		t.Fatal("y copied nothing")
+	}
+}
+
+func TestViewerClickAndShiftDragSelectNothing(t *testing.T) {
+	m := newTestViewer(t)
+	mouse(m, click(4, 1))
+	mouse(m, release(4, 1))
+	if m.sel != nil {
+		t.Fatal("click selected")
+	}
+	mouse(m, tea.MouseClickMsg{X: 4, Y: 1, Button: tea.MouseLeft, Mod: tea.ModShift})
+	mouse(m, tea.MouseMotionMsg{X: 40, Y: 12, Button: tea.MouseLeft, Mod: tea.ModShift})
+	if m.sel != nil {
+		t.Fatal("shift-drag selected")
+	}
+	mouse(m, click(4, 38)) // the status row, just below the 38-row picture
+	mouse(m, motion(40, 12))
+	if m.sel != nil || m.dragging {
+		t.Fatal("drag from outside the picture selected")
+	}
+}
+
+func TestViewerClickClearsSelection(t *testing.T) {
+	m := newTestViewer(t)
+	mouse(m, click(4, 1))
+	mouse(m, motion(40, 12))
+	mouse(m, release(40, 12))
+	if m.selected == "" {
+		t.Fatal("no selection to clear")
+	}
+	mouse(m, click(60, 20))
+	mouse(m, release(60, 20))
+	if m.sel != nil || m.selected != "" {
+		t.Fatal("click did not clear the selection")
+	}
+}
+
+func TestViewerDragClampsAtEdge(t *testing.T) {
+	m := newTestViewer(t)
+	mouse(m, click(4, 1))
+	mouse(m, motion(40, 12))
+	inside := m.selected
+	mouse(m, motion(150, 60)) // past the picture on both axes
+	if !m.dragging || len(m.selected) <= len(inside) {
+		t.Fatalf("drag past the edge: dragging %v, %q then %q", m.dragging, inside, m.selected)
+	}
+}
+
+func TestViewerMouseIgnoredWhileStale(t *testing.T) {
+	m := newTestViewer(t)
+	mouse(m, click(4, 1))
+	m.pic.SetSize(80, 30) // geometry changes before any redraw
+	mouse(m, motion(40, 12))
+	if m.dragging || m.sel != nil {
+		t.Fatal("stale geometry still mapped the mouse")
+	}
+}
+
+func TestViewerSelectionSurvivesLook(t *testing.T) {
+	m := newTestViewer(t)
+	mouse(m, click(4, 1))
+	mouse(m, motion(40, 12))
+	mouse(m, release(40, 12))
+	before := m.selected
+	press(m, 'f')
+	press(m, 'd')
+	if m.selected != before {
+		t.Fatalf("look or palette changed the selection: %q then %q", before, m.selected)
+	}
+}
+
+func TestViewerStatusFitsWidth(t *testing.T) {
+	m := newTestViewer(t)
+	mouse(m, click(4, 1))
+	mouse(m, motion(40, 12))
+	mouse(m, release(40, 12))
+	m.width = 40
+	rows := strings.Split(m.View().Content, "\n")
+	status := rows[len(rows)-2]
+	if ansi.StringWidth(status) > 40 || !strings.HasSuffix(status, "…") {
+		t.Fatalf("status %q not cut to 40", status)
 	}
 }

@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"image"
+	"unicode/utf8"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	nt "nimbleterminal.dev/ntpicture"
 	"nimbleterminal.dev/nttypeset"
 	"nimbleterminal.dev/nttypeset/examples/internal/demorun"
@@ -16,7 +19,8 @@ const scrollStep = 60
 
 // viewer is the terminal program: the page in an ntpicture Picture, rastered
 // at the picture's own device pixels so the terminal copies the raster rather
-// than resampling it. The reading scale follows the terminal width.
+// than resampling it. The reading scale follows the terminal width. A left
+// drag over the picture selects text, which y copies.
 type viewer struct {
 	ctx    context.Context
 	page   *page
@@ -28,20 +32,30 @@ type viewer struct {
 	height int               // the view's height, in layout pixels
 	width  int               // the terminal's width, in columns
 	geom   nt.RasterGeometry // what the shown raster was made for
+	view   nttypeset.View    // the region of the page the shown raster maps to
+	last   *image.RGBA       // the raster redraw last submitted
 	err    error
+
+	sel      *nttypeset.Selection // the selection; placed once it lands on text
+	selected string               // the text of sel
+	dragging bool                 // a left drag that began on the picture is in progress
+	dragFrom image.Point          // the page point where the drag began
+	dragTo   image.Point          // the page point the selection's focus last followed
+	note     string               // the last action's result, shown until the next key or click
 }
 
 func show(ctx context.Context, p *page, eng *nttypeset.Engine, o options) error {
 	pic := nt.New(nt.Options{AutoMode: true})
 	defer func() { _ = pic.Close() }()
-	return demorun.Run(&viewer{ctx: ctx, page: p, eng: eng, pic: pic, o: o}, "typeset", "Typeset a page")
+	return demorun.Run(&viewer{ctx: ctx, page: p, eng: eng, pic: pic, o: o, sel: p.sel}, "typeset", "Typeset a page")
 }
 
 // bindings are the viewer's keys by name.
 type bindings struct {
 	down, up, pgdown, pgup, top, end key.Binding
 	dark, look, mono, toggle         key.Binding
-	numbers, chop, keep, quit        key.Binding
+	numbers, chop, copy, clear       key.Binding
+	keep, quit                       key.Binding
 }
 
 // newBindings makes the bindings; the Kitty toggle is enabled only where
@@ -60,6 +74,8 @@ func newBindings(kitty bool) bindings {
 		toggle:  demorun.Binding("Glyph / Kitty", "t"),
 		numbers: demorun.Binding("Line numbers", "n"),
 		chop:    demorun.Binding("Chop lines", "c"),
+		copy:    demorun.Binding("Copy", "y"),
+		clear:   demorun.Binding("Clear selection", "esc"),
 		keep:    demorun.Binding("Keep screen & quit", "Q"),
 		quit:    demorun.Binding("Quit", "q", "ctrl+c"),
 	}
@@ -71,7 +87,7 @@ func newBindings(kitty bool) bindings {
 func (b bindings) keys() demorun.Keys {
 	return demorun.Keys{
 		Primary: []key.Binding{b.down, b.up, b.pgdown, b.pgup, b.top, b.end, b.dark, b.look, b.mono, b.toggle},
-		More:    []key.Binding{b.numbers, b.chop, b.keep, b.quit},
+		More:    []key.Binding{b.numbers, b.chop, b.copy, b.clear, b.keep, b.quit},
 	}
 }
 
@@ -95,6 +111,10 @@ func (m *viewer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		cmd := m.pic.Update(msg)
 		return m, tea.Batch(cmd, m.pic.SetSize(max(0, msg.Width), max(0, msg.Height-2)), m.redraw())
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		if cmd, ok := m.mouse(msg); ok {
+			return m, cmd
+		}
 	}
 	cmd := m.pic.Update(msg)
 	if m.pic.RasterGeometry() != m.geom {
@@ -105,6 +125,9 @@ func (m *viewer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *viewer) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	b := m.bindings()
+	if !key.Matches(msg, b.copy) {
+		m.note = ""
+	}
 	switch {
 	case key.Matches(msg, b.quit):
 		return m, tea.Sequence(m.pic.Close(), tea.Quit)
@@ -147,10 +170,99 @@ func (m *viewer) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, b.chop):
 		m.page.opts.Chop = !m.page.opts.Chop
 		m.lay = nil
+	case key.Matches(msg, b.copy):
+		if m.selected == "" {
+			return m, nil
+		}
+		m.note = fmt.Sprintf("copied %d characters", utf8.RuneCountInString(m.selected))
+		return m, tea.SetClipboard(m.selected)
+	case key.Matches(msg, b.clear):
+		if m.sel == nil {
+			return m, nil
+		}
+		m.sel, m.selected, m.dragging = nil, "", false
 	default:
 		return m, nil
 	}
 	return m, m.redraw()
+}
+
+// live reports whether mouse positions map onto the shown raster: the page is
+// laid out, nothing failed, and the picture still has the geometry the raster
+// was made for.
+func (m *viewer) live() bool {
+	return m.lay != nil && m.err == nil && m.pic.RasterGeometry() == m.geom
+}
+
+// pageAt is the page point under screen cell (x, y), whose picture starts at
+// the screen's top left corner. A cell is the raster pixel at its center.
+// With clamp, a cell beyond the picture maps to its nearest edge pixel, for a
+// drag that leaves it; otherwise it maps to nothing.
+func (m *viewer) pageAt(x, y int, clamp bool) (image.Point, bool) {
+	g := m.geom
+	if g.Cells.X <= 0 || g.Cells.Y <= 0 || g.Pixels.X <= 0 || g.Pixels.Y <= 0 {
+		return image.Point{}, false
+	}
+	if !clamp && (x < 0 || y < 0 || x >= g.Cells.X || y >= g.Cells.Y) {
+		return image.Point{}, false
+	}
+	px := (2*x + 1) * g.Pixels.X / (2 * g.Cells.X)
+	py := (2*y + 1) * g.Pixels.Y / (2 * g.Cells.Y)
+	px, py = max(0, min(g.Pixels.X-1, px)), max(0, min(g.Pixels.Y-1, py))
+	return m.view.Unproject(image.Pt(px, py)), true
+}
+
+// mouse follows a left drag over the page and says whether the message was
+// the page's, so that nothing else answers it. Shift and Alt drags and other
+// buttons are left to the terminal.
+func (m *viewer) mouse(msg tea.Msg) (tea.Cmd, bool) {
+	if !m.live() {
+		m.dragging = false
+		return nil, false
+	}
+	switch msg := msg.(type) {
+	case tea.MouseClickMsg:
+		m.dragging = false
+		if msg.Button != tea.MouseLeft || msg.Mod&(tea.ModShift|tea.ModAlt) != 0 {
+			return nil, false
+		}
+		m.note = ""
+		var cmd tea.Cmd
+		if m.sel != nil {
+			m.sel, m.selected = nil, ""
+			cmd = m.redraw()
+		}
+		if p, ok := m.pageAt(msg.X, msg.Y, false); ok {
+			m.dragging, m.dragFrom, m.dragTo = true, p, p
+		}
+		return cmd, true
+	case tea.MouseMotionMsg:
+		if !m.dragging {
+			return nil, false
+		}
+		p, ok := m.pageAt(msg.X, msg.Y, true)
+		if !ok || (p == m.dragTo && m.sel != nil) {
+			return nil, true
+		}
+		// A new value, not a change in place: the shown selection may be
+		// the one this came from.
+		sel := nttypeset.Selection{Anchor: nttypeset.Place{Point: m.dragFrom}, Focus: nttypeset.Place{Point: p}}
+		if m.sel != nil {
+			sel.Anchor = m.sel.Anchor
+		}
+		m.sel, m.dragTo = &sel, p
+		return m.redraw(), true
+	case tea.MouseReleaseMsg:
+		if !m.dragging {
+			return nil, false
+		}
+		m.dragging = false
+		if m.selected == "" {
+			m.sel = nil
+		}
+		return nil, true
+	}
+	return nil, false
 }
 
 // nextLook moves to the next built-in look.
@@ -204,13 +316,34 @@ func (m *viewer) redraw() tea.Cmd {
 	if m.lay.Done() {
 		m.top = min(m.top, max(0, m.lay.Extent()-m.height))
 	}
+	// The selection's ends are placed in the text once it lands on some, so
+	// they keep through scrolling, a new look and a new layout.
+	var shown *nttypeset.Selection
+	if m.sel != nil {
+		selected, err := m.lay.Select(m.ctx, *m.sel)
+		if err != nil {
+			m.err = err
+			return nil
+		}
+		if selected != nil {
+			places := selected.Places()
+			m.sel, m.selected = &places, selected.Text()
+			shown = m.sel
+		} else {
+			m.selected = ""
+			if !m.dragging {
+				m.sel = nil
+			}
+		}
+	}
 	v := nttypeset.View{Top: m.top, Width: width, Height: m.height, Scale: scale, Pixels: g.Pixels}
-	img, err := m.page.render(m.ctx, m.lay, v, m.o.dark, m.page.sel)
+	img, err := m.page.render(m.ctx, m.lay, v, m.o.dark, shown)
 	if err != nil {
 		m.err = err
 		return nil
 	}
 	m.err = nil
+	m.view, m.last = v, img
 	return m.pic.SetImageFor(img, g)
 }
 
@@ -224,11 +357,21 @@ func (m *viewer) View() tea.View {
 		mode = "kitty"
 	}
 	status := fmt.Sprintf("%s · %s%s · %s · %s · top %d", m.page.title, m.o.font, suffix(m.o.mono), palette, mode, m.top)
+	switch {
+	case m.note != "":
+		status += " · " + m.note
+	case m.selected != "":
+		status += fmt.Sprintf(" · %d selected · y copies", utf8.RuneCountInString(m.selected))
+	}
 	if m.err != nil {
 		status += " · " + m.err.Error()
 	}
+	if m.width > 0 {
+		status = ansi.Truncate(status, m.width, "…")
+	}
 	v := tea.NewView(m.pic.View() + "\n" + status + "\n" + m.HelpKeys().View(m.width))
 	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
 	return v
 }
 
