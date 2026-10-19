@@ -117,7 +117,7 @@ Actions.
 The Node smoke script runs the wasm and checks its output; it is not a visual check.
 Before announcing a site change, run `task serve-wasm-site`, open both demos in
 a browser, scroll, cycle the looks, toggle dark and mono, drag over the page
-and press `y` and check the clipboard, and record what you saw.
+and press `y` and check the clipboard, scroll with the wheel, and record what you saw.
 
 ## Releases
 

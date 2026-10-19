@@ -230,6 +230,22 @@ func TestViewerDragClampsAtEdge(t *testing.T) {
 	}
 }
 
+func TestViewerWheelScrolls(t *testing.T) {
+	m := newTestViewer(t)
+	mouse(m, tea.MouseWheelMsg{X: 4, Y: 4, Button: tea.MouseWheelDown})
+	if m.top != scrollStep {
+		t.Fatalf("top %d after wheel down", m.top)
+	}
+	mouse(m, tea.MouseWheelMsg{X: 4, Y: 4, Button: tea.MouseWheelUp})
+	if m.top != 0 {
+		t.Fatalf("top %d after wheel up", m.top)
+	}
+	mouse(m, tea.MouseWheelMsg{X: 4, Y: 4, Button: tea.MouseWheelUp})
+	if m.top != 0 {
+		t.Fatalf("top %d after wheel up at the top", m.top)
+	}
+}
+
 func TestViewerMouseIgnoredWhileStale(t *testing.T) {
 	m := newTestViewer(t)
 	mouse(m, click(4, 1))

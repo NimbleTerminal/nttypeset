@@ -111,6 +111,17 @@ func (m *viewer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		cmd := m.pic.Update(msg)
 		return m, tea.Batch(cmd, m.pic.SetSize(max(0, msg.Width), max(0, msg.Height-2)), m.redraw())
+	case tea.MouseWheelMsg:
+		// With mouse reporting on, the terminal sends the wheel as this
+		// message, not as arrow keys: it scrolls like j and k.
+		switch msg.Button {
+		case tea.MouseWheelDown:
+			m.top += scrollStep
+			return m, m.redraw()
+		case tea.MouseWheelUp:
+			m.top = max(0, m.top-scrollStep)
+			return m, m.redraw()
+		}
 	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
 		if cmd, ok := m.mouse(msg); ok {
 			return m, cmd
