@@ -29,8 +29,9 @@ task clean               # remove generated artifacts and installed QA tools
 
 Install [Go Task](https://taskfile.dev) and a C compiler for the race detector.
 The site checks need Node 24. `task --list-all` lists maintenance tasks. CI runs
-on Linux and macOS. Tasks explicitly use `GOWORK=off`, except the browser tasks,
-which point `GOWORK` at `wasm.work`.
+on Linux and macOS. Tasks explicitly use `GOWORK=off`, except `build-wasm`,
+`test-wasm` and `vulncheck-wasm`, which point `GOWORK` at `wasm.work`; the site
+tasks that call them run under `GOWORK=off`.
 
 `task vulncheck` installs govulncheck v1.8.0 into `.task/bin` and scans the
 module. It requires network access to the Go vulnerability database; failures
@@ -101,9 +102,9 @@ The demos publish their keys to booba as actions through
 lists only the More group. The expanded browser action bar therefore shows More
 before Primary, while the terminal help row shows Primary then More.
 `demorun.Check` and the `...KeysFitBooba` tests guard the cap. The terminal help
-row truncates with an ellipsis in narrow terminals; the booba action bar always
-lists every key. The Node smoke scripts resize the terminal to 160 columns
-because at 100 the typeset help row truncates before Quit.
+row always ends with Quit and truncates the rest with an ellipsis in narrow
+terminals; the booba action bar always lists every key. The Node smoke script
+resizes the terminal to 100 columns and waits for Quit.
 
 `.github/workflows/pages.yml` deploys `web/` to GitHub Pages on each push to
 `main` and on manual runs. It runs `task ci` first and uploads the site only if
@@ -111,7 +112,7 @@ every check passes. It does not run on other branches. After the first merge the
 maintainer enables Pages on the repository once, with the source set to GitHub
 Actions.
 
-The Node smoke runs the wasm and checks its output; it is not a visual check.
+The Node smoke script runs the wasm and checks its output; it is not a visual check.
 Before announcing a site change, run `task serve-wasm-site`, open both demos in
 a browser, scroll, cycle the looks, toggle dark and mono, and record what you
 saw.

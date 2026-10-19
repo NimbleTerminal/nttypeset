@@ -25,14 +25,14 @@ async function outputFollows() {
 try {
   for (let n = 0; typeof globalThis.bubbletea_read !== 'function' && n < 100; n++) await delay(20);
   assert.equal(typeof globalThis.bubbletea_read, 'function', 'booba bridge installed');
-  // Wide enough that the typeset help row reaches "Quit" before it truncates.
-  bubbletea_resize(160, 40);
+  // The help row always ends with Quit, even when it truncates the rest.
+  bubbletea_resize(100, 40);
   let output = '';
-  for (let n = 0; n < 100 && !output.toLowerCase().includes('quit'); n++) {
+  for (let n = 0; n < 100 && !output.includes('Quit'); n++) {
     await delay(25);
     output += bubbletea_read();
   }
-  assert.ok(output.toLowerCase().includes('quit'), 'initial terminal view rendered');
+  assert.ok(output.includes('Quit'), 'initial terminal view rendered');
   assert.ok(output.includes('\x1b]7501;?'), 'application queries action support');
   bubbletea_write('\x1b]7501;?\x1b\\');
   let report;

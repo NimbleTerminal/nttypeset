@@ -26,7 +26,8 @@ Longer-form docs: `README.md` (overview), `DEVELOP.md` (tooling and releases),
 ## Commands
 
 All tasks run through [Go Task](https://taskfile.dev) (`Taskfile.yml`). Tasks
-set `GOWORK=off`, except the browser tasks, which use `wasm.work`. The site
+set `GOWORK=off`, except `build-wasm`, `test-wasm` and `vulncheck-wasm`, which
+use `wasm.work`; the site tasks that call them run under `GOWORK=off`. The site
 checks need Node 24.
 
 ```sh
