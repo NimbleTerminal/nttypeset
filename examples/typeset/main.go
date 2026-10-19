@@ -83,7 +83,7 @@ func run(o options, name string) error {
 	if err != nil {
 		return err
 	}
-	img, err := p.render(ctx, lay, nttypeset.View{Width: o.width, Height: o.height, Scale: o.scale}, o.dark)
+	img, err := p.render(ctx, lay, nttypeset.View{Width: o.width, Height: o.height, Scale: o.scale}, o.dark, p.sel)
 	if err != nil {
 		return err
 	}
@@ -196,18 +196,18 @@ func decode(dir fs.FS, name string) image.Image {
 }
 
 // render lays out as far as v needs and paints it with the light or dark
-// palette and the page's selection, if its places land on text.
-func (p *page) render(ctx context.Context, lay *nttypeset.Layout, v nttypeset.View, dark bool) (*image.RGBA, error) {
+// palette and sel, if its places land on text.
+func (p *page) render(ctx context.Context, lay *nttypeset.Layout, v nttypeset.View, dark bool, sel *nttypeset.Selection) (*image.RGBA, error) {
 	opts := nttypeset.RasterOptions{Palette: nttypeset.LightPalette()}
 	if dark {
 		opts.Palette = nttypeset.DarkPalette()
 	}
-	if p.sel != nil {
-		sel, err := lay.Select(ctx, *p.sel)
+	if sel != nil {
+		selected, err := lay.Select(ctx, *sel)
 		if err != nil {
 			return nil, err
 		}
-		opts.Selection = sel
+		opts.Selection = selected
 	}
 	return lay.Raster(ctx, v, opts)
 }

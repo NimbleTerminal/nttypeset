@@ -205,7 +205,7 @@ func (m *viewer) redraw() tea.Cmd {
 		m.top = min(m.top, max(0, m.lay.Extent()-m.height))
 	}
 	v := nttypeset.View{Top: m.top, Width: width, Height: m.height, Scale: scale, Pixels: g.Pixels}
-	img, err := m.page.render(m.ctx, m.lay, v, m.o.dark)
+	img, err := m.page.render(m.ctx, m.lay, v, m.o.dark, m.page.sel)
 	if err != nil {
 		m.err = err
 		return nil
