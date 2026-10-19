@@ -116,7 +116,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/NimbleMarkets/go-booba v0.9.2
+## github.com/NimbleMarkets/go-booba v0.10.2
 
 ```
 MIT License

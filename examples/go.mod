@@ -5,7 +5,7 @@ go 1.26.8
 require (
 	charm.land/bubbles/v2 v2.2.1
 	charm.land/bubbletea/v2 v2.1.0
-	github.com/NimbleMarkets/go-booba v0.9.2
+	github.com/NimbleMarkets/go-booba v0.10.2
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/yuin/goldmark v1.8.2
