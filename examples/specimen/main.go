@@ -20,8 +20,8 @@ import (
 // body and code are the sample lines of every row: body text with accents and
 // an em dash, and a line of code.
 const (
-	body = "Sphinx of black quartz, judge my vow. Café, naïve, résumé — 0123456789"
-	code = "func (e *Engine) Layout(doc *Document, width int) (*Layout, error)"
+	body = "Sphinx of black quartz, judge my vow — café, naïve, résumé"
+	code = "lay, err := eng.Layout(doc, 800, opts) // 0123456789"
 )
 
 // options are the command line.
