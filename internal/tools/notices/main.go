@@ -56,12 +56,16 @@ func run() error {
 	for _, platform := range platforms {
 		builds = append(builds, build{"", []string{"GOOS=" + platform[0], "GOARCH=" + platform[1]}})
 	}
-	// The demos are their own module: natively on their own, and for the
-	// browser through the workspace that swaps in the Bubble Tea fork.
-	builds = append(builds,
-		build{"examples", []string{"GOWORK=off"}},
-		build{"examples", []string{"GOOS=js", "GOARCH=wasm", "GOWORK=" + mustWorkspace()}},
-	)
+	// The demos are their own module: natively on every platform too, and
+	// for the browser through the workspace that swaps in the Bubble Tea
+	// fork.
+	for _, platform := range platforms {
+		if platform == [2]string{"js", "wasm"} {
+			continue
+		}
+		builds = append(builds, build{"examples", []string{"GOWORK=off", "GOOS=" + platform[0], "GOARCH=" + platform[1]}})
+	}
+	builds = append(builds, build{"examples", []string{"GOOS=js", "GOARCH=wasm", "GOWORK=" + mustWorkspace()}})
 	for _, bd := range builds {
 		cmd := exec.Command("go", "list", "-deps", "-f", format, "./...")
 		cmd.Dir, cmd.Env = bd.dir, append(os.Environ(), bd.env...)
