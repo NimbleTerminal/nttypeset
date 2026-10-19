@@ -70,11 +70,10 @@ type Model interface {
 	HelpKeys() Keys
 }
 
-// adapter shows only the first shortcut of an action that has aliases. An
-// action with one shortcut needs no preference, and leaving it out keeps the
-// status message within booba's 2048 bytes. The snapshot then carries only
-// that first key: the bar's buttons send it, the model still matches every
-// alias, and the snapshot has to fit booba's 2048 bytes.
+// adapter shows only the first shortcut of an action that has aliases: that
+// key is the one the bar's buttons send, and the model still matches every
+// alias. An action with one shortcut needs no preference. Leaving the rest out
+// keeps the snapshot within booba's 2048-byte status message.
 var adapter = bubblehelp.Options{Customize: func(_ key.Binding, a *actions.Action) error {
 	if len(a.Keys) > 1 {
 		first := 0
