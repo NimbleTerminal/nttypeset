@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.1 - 2026-10-19
+
 - `View.Unproject` maps a raster pixel back to the page point it was projected from, the inverse of `Project`.
 - `examples/typeset` selects text with a left drag, copies it with `y` and clears it with `Esc` or a click, natively and on the site.
 - The site runs on go-booba v0.10.2, whose browser runtime copies OSC 52 writes from wasm programs and carries the ghostty-web fixes for wheel scrolling under mouse tracking, Ctrl+V forwarding and runtime cursor shapes.
