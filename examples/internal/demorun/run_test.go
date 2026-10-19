@@ -18,17 +18,56 @@ func TestBindingUsesFirstShortcutForHelp(t *testing.T) {
 }
 
 func TestKeysViewTruncates(t *testing.T) {
-	k := Keys{
-		Primary: []key.Binding{Binding("Down", "j"), Binding("Up", "k"), Binding("Page down", "space")},
-		More:    []key.Binding{Binding("Quit", "q")},
+	var primary []key.Binding
+	labels := []string{"Down", "Up", "Page down", "Page up", "Top", "End", "Dark / Light", "Next look", "Mono", "Glyph / Kitty"}
+	for i, l := range labels {
+		primary = append(primary, Binding(l, string(rune('a'+i))))
 	}
-	wide := k.View(200)
-	if !strings.Contains(wide, "Quit") || strings.Contains(wide, "\n") {
-		t.Fatalf("wide: %q", wide)
+	k := Keys{Primary: primary, More: []key.Binding{
+		Binding("Line numbers", "n"), Binding("Chop lines", "c"), Binding("Keep screen & quit", "Q"), Binding("Quit", "q", "ctrl+c"),
+	}}
+	full := ansi.StringWidth(k.View(1000))
+	for _, width := range []int{40, 60, 80, 81, 100, 120, 200} {
+		view := k.View(width)
+		plain := ansi.Strip(view)
+		if w := ansi.StringWidth(view); w > width {
+			t.Errorf("width %d: view is %d columns: %q", width, w, plain)
+		}
+		if strings.Contains(view, "\n") {
+			t.Errorf("width %d: newline in %q", width, plain)
+		}
+		if !strings.HasSuffix(plain, "q Quit") {
+			t.Errorf("width %d: does not end with Quit: %q", width, plain)
+		}
+		if width < full && !strings.Contains(plain, "…") {
+			t.Errorf("width %d: no ellipsis: %q", width, plain)
+		}
+		if width >= full {
+			if strings.Contains(plain, "…") {
+				t.Errorf("width %d: ellipsis in %q", width, plain)
+			}
+			for _, l := range labels {
+				if !strings.Contains(plain, l) {
+					t.Errorf("width %d: lacks %q in %q", width, l, plain)
+				}
+			}
+		}
 	}
-	narrow := k.View(16)
-	if ansi.StringWidth(narrow) > 16 || strings.Contains(narrow, "\n") {
-		t.Fatalf("narrow: %q", narrow)
+	if full > 200 {
+		t.Fatalf("full row is %d columns, the 200 case needs it whole", full)
+	}
+}
+
+func TestKeysViewQuitAlone(t *testing.T) {
+	k := Keys{Primary: []key.Binding{Binding("Down", "j")}, More: []key.Binding{Binding("Quit", "q")}}
+	if got := ansi.Strip(k.View(6)); got != "q Quit" {
+		t.Fatalf("%q", got)
+	}
+	if got := k.View(3); ansi.StringWidth(got) > 3 || !strings.Contains(got, "…") {
+		t.Fatalf("%q", ansi.Strip(got))
+	}
+	if got := ansi.Strip(Keys{Primary: k.Primary}.View(40)); got != "j Down" {
+		t.Fatalf("%q", got)
 	}
 }
 

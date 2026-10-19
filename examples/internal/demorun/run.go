@@ -12,9 +12,11 @@ import (
 	booba "github.com/NimbleMarkets/go-booba"
 	"github.com/NimbleMarkets/go-booba/actions"
 	"github.com/NimbleMarkets/go-booba/actions/bubblehelp"
+	"github.com/charmbracelet/x/ansi"
 )
 
-// Keys supplies the primary buttons and the expanded list of shortcuts.
+// Keys supplies the primary buttons and the expanded list of shortcuts. The
+// last More binding is Quit and is always shown in the terminal help row.
 type Keys struct {
 	Primary []key.Binding
 	More    []key.Binding
@@ -28,15 +30,33 @@ func (k Keys) ShortHelp() []key.Binding { return k.Primary }
 // that booba allows a status message.
 func (k Keys) FullHelp() [][]key.Binding { return [][]key.Binding{k.More} }
 
-// View renders Primary followed by More as one help row, truncated with an
-// ellipsis at width.
+// View renders Primary followed by More as one help row of at most width
+// columns. The rest of the row is cut with an ellipsis to make room, so the
+// row always ends with Quit, the last More binding. Below the width of the
+// Quit entry alone, the row is that entry cut at width.
 func (k Keys) View(width int) string {
 	h := help.New()
-	h.SetWidth(width)
-	bindings := make([]key.Binding, 0, len(k.Primary)+len(k.More))
-	bindings = append(bindings, k.Primary...)
-	bindings = append(bindings, k.More...)
-	return h.ShortHelpView(bindings)
+	shown := append(append([]key.Binding{}, k.Primary...), k.More...)
+	var quit string
+	if n := len(k.More); n > 0 {
+		shown = shown[:len(shown)-1]
+		quit = h.Styles.ShortKey.Inline(true).Render(k.More[n-1].Help().Key) + " " +
+			h.Styles.ShortDesc.Inline(true).Render(k.More[n-1].Help().Desc)
+	}
+	separator := h.Styles.ShortSeparator.Inline(true).Render(h.ShortSeparator)
+	row := quit
+	if room := width - ansi.StringWidth(separator) - ansi.StringWidth(quit); room > 0 {
+		// ShortHelpView lets an item through when it does not fit and the
+		// ellipsis does not either, so cut its result too.
+		h.SetWidth(room)
+		if rest := ansi.Truncate(h.ShortHelpView(shown), room, h.Ellipsis); rest != "" {
+			row = rest
+			if quit != "" {
+				row += separator + quit
+			}
+		}
+	}
+	return ansi.Truncate(row, width, h.Ellipsis)
 }
 
 // Binding matches any of shortcuts and shows the first one in help.
