@@ -164,6 +164,33 @@ func (l *Layout) caretAt(p image.Point) (caret, bool) {
 
 // runRune is the rune boundary of a run nearest to page x: before the glyph
 // cluster x is in the left half of, after it otherwise.
+// Hit is the text under a page point: a rune of a paragraph of a block, and
+// the whole of that paragraph's text, the same at every width.
+type Hit struct {
+	Block, Para, Rune int
+	Text              string
+}
+
+// TextAt returns the text under page point p, false when no text is drawn
+// there: in a margin, between lines or runs, on a picture or a line number.
+// Unlike a selection's place, it does not take the nearest text.
+func (l *Layout) TextAt(p image.Point) (Hit, bool) {
+	for i := range l.ops {
+		op := &l.ops[i]
+		if op.run == nil || op.gutter || !p.In(op.rect) {
+			continue
+		}
+		pos, at := fixed.I(op.rect.Min.X), fixed.I(p.X)
+		for _, g := range op.run.Glyphs {
+			if at < pos+g.Advance {
+				return Hit{Block: op.block, Para: op.para, Rune: g.TextIndex(), Text: string(op.text)}, true
+			}
+			pos += g.Advance
+		}
+	}
+	return Hit{}, false
+}
+
 func runRune(op *operation, x int) int {
 	pos, at := fixed.I(op.rect.Min.X), fixed.I(x)
 	for _, g := range op.run.Glyphs {

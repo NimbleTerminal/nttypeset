@@ -103,7 +103,9 @@ compiled to WebAssembly and shown through booba and ghostty-web.
 
 - Incremental layout: `Layout.Ensure`, `EnsureBlock` and `Complete` lay out only
   what a view needs, and `Raster` does so itself.
-- Hit areas: `Links` and `Images` for a view, and `Find` for a link target.
+- Hit areas: `Links` (each with the runes it covers) and `Images` for a view,
+  `Find` for a link target, `Bounds` for each laid block, and `TextAt` for the
+  text under a point.
 - Selection: `Select` turns two points on the page into logical text and a
   highlight that `Raster` draws; `View.Unproject` maps a raster pixel back to
   the page.

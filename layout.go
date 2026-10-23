@@ -442,7 +442,7 @@ func (l *Layout) block() {
 			w := min(width, iw)
 			h := max(1, ih*w/iw)
 			x += im.Bounds.Offset(width, w)
-			l.ops = append(l.ops, operation{rect: image.Rect(x, l.y, x+w, l.y+h), asset: im.Still, destination: im.Key, animated: im.Animated, href: b.Href})
+			l.ops = append(l.ops, operation{rect: image.Rect(x, l.y, x+w, l.y+h), asset: im.Still, destination: im.Key, animated: im.Animated, href: b.Href, block: l.next - 1})
 			l.y += h + 20
 		case KindTable:
 			l.table(b, x, width)

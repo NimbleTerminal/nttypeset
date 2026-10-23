@@ -85,13 +85,13 @@ Root package `nttypeset`:
 | `fonts.go` | `FontLook`, `ResolveFont`, `FontKey`, `FaceSource`, face loading and glyph fallback. |
 | `engine.go` | `Engine`, `NewEngine` and the `Option`s; cancellation through `enter` and `check`. |
 | `shape.go` | The shaping pipeline and the bounded shaped-run cache. |
-| `layout.go` | `Layout`, incremental layout, `text`, blocks and tables, and the `guard` that recovers panics. |
+| `layout.go` | `Layout`, incremental layout, `text`, blocks and tables, `Bounds`, and the `guard` that recovers panics. |
 | `lines.go` | `Lines`: source text as a line document. |
 | `highlight.go` | `Highlight`: chroma tokens as styled spans. |
 | `view.go` | `View`: the region of the page and the raster it maps to; `Project` and `Unproject`. |
 | `palette.go` | `Palette`, `LightPalette`, `DarkPalette`. |
 | `raster.go` | `Layout.Raster`, `Links`, `Images`, `RasterOptions`; draws the display list. |
-| `select.go` | `Place`, `Selection`, `Selected`, `Layout.Select`: logical selection and carets. |
+| `select.go` | `Place`, `Selection`, `Selected`, `Layout.Select`: logical selection and carets; `Hit` and `Layout.TextAt`, the text under a point. |
 | `preview.go` | `Preview`: the font chooser picture. |
 | `export_test.go` | Test-only access to unexported engine methods. |
 | `*_test.go` | Tests for the file of the same name; `example_test.go` holds `ExampleLines`. |

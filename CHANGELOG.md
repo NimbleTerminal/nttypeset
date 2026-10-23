@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `Link` says where it comes from: its block, paragraph and runes, the same at every width, so a caller can tell the lines of one wrapped link from two links to one URL.
+- `Layout.TextAt` gives the text under a page point, its paragraph and rune, or nothing off the text, as for finding a web address written out in a paragraph.
 - `Layout.Bounds` gives the page rectangle around what each laid block drew, so a caller can find a table or a heading without knowing the spacing between blocks.
 
 ## v0.1.1 - 2026-10-19

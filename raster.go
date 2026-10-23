@@ -24,6 +24,12 @@ type RasterOptions struct {
 type Link struct {
 	Rect image.Rectangle // raster pixels, clipped to the view
 	URL  string
+	// Where it comes from, the same at every width: its block, and for a
+	// text link the paragraph of the block and the runes of the paragraph
+	// the rectangle covers, [start, end). A link wrapped over lines gives a
+	// rectangle a line, with runes that meet; two links to one URL do not.
+	Block, Para int
+	Runes       [2]int
 }
 
 // Placed is an image placed by the layout.
@@ -122,7 +128,11 @@ func (l *Layout) Links(v View) []Link {
 		}
 		r := v.Project(op.rect).Intersect(bounds)
 		if !r.Empty() {
-			out = append(out, Link{Rect: r, URL: op.href})
+			link := Link{Rect: r, URL: op.href, Block: op.block, Para: op.para}
+			if op.run != nil {
+				link.Runes = [2]int{op.run.Runes.Offset, op.run.Runes.Offset + op.run.Runes.Count}
+			}
+			out = append(out, link)
 		}
 	}
 	return out
