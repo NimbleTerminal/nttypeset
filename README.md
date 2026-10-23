@@ -81,8 +81,8 @@ image's size and alignment from its node.
 
 `examples/typeset` shows a Markdown or text file in the terminal through
 ntpicture, with keys to scroll, cycle the looks, swap the code face and switch
-palettes, a mouse drag to select text and `y` to copy it, or writes the top of
-the page as a PNG:
+palettes, a mouse drag to select text and `y` to copy it, a tint on the link
+under the pointer, or writes the top of the page as a PNG:
 
 ```sh
 task run-typeset                                        # the embedded sample page
@@ -107,7 +107,8 @@ compiled to WebAssembly and shown through booba and ghostty-web.
   `Find` for a link target, `Bounds` for each laid block, and `TextAt` for the
   text under a point.
 - Selection: `Select` turns two points on the page into logical text and a
-  highlight that `Raster` draws; `View.Unproject` maps a raster pixel back to
+  highlight that `Raster` draws; `RasterOptions.Marks` tints any stretches of
+  text behind their glyphs, as the link under a pointer (`Link.Mark`); `View.Unproject` maps a raster pixel back to
   the page.
 - `Highlight` and `Lines`: chroma tokens as styled spans, and source as a
   document, with an optional gutter of line numbers or unwrapped lines through

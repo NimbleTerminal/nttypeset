@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `RasterOptions.Marks` tints stretches of text behind their glyphs, in the selection's color halfway to the page, as for the link under a pointer; `Link.Mark` gives a link line's `Mark`.
+- `examples/typeset` tints the link under the pointer, every line of it.
+
 ## v0.1.2 - 2026-10-22
 
 - `Link` says where it comes from: its block, paragraph and runes, the same at every width, so a caller can tell the lines of one wrapped link from two links to one URL.

@@ -231,6 +231,12 @@ func (s *Selected) span(l *Layout, i int, op *operation) (x0, x1 int, ok bool) {
 	if i == s.end.op {
 		to = s.end.rune
 	}
+	return runSpan(op, from, to)
+}
+
+// runSpan is the page x range of runes [from, to) of a text operation's run,
+// counted from the run's start; false when that is no runes.
+func runSpan(op *operation, from, to int) (x0, x1 int, ok bool) {
 	if from >= to {
 		return 0, 0, false
 	}

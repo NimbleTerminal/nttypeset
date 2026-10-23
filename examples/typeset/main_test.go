@@ -90,7 +90,7 @@ func TestRenderPaintsAndSelectionShows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	light, err := p.render(ctx, lay, v, false, nil)
+	light, err := p.render(ctx, lay, v, false, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestRenderPaintsAndSelectionShows(t *testing.T) {
 	if pixels.CountNot(light, nttypeset.LightPalette().Background) == 0 {
 		t.Fatal("light page has no ink")
 	}
-	dark, err := p.render(ctx, lay, v, true, nil)
+	dark, err := p.render(ctx, lay, v, true, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestRenderPaintsAndSelectionShows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	selected, err := p.render(ctx, lay, v, false, &sel)
+	selected, err := p.render(ctx, lay, v, false, &sel, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

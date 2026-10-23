@@ -286,3 +286,29 @@ func TestViewerStatusFitsWidth(t *testing.T) {
 		t.Fatalf("status %q not cut to 40", status)
 	}
 }
+
+// Moving the pointer over the sample's link tints it; moving off untints.
+func TestViewerHoverMarksLink(t *testing.T) {
+	m := newTestViewer(t)
+	plain := m.last
+	if m.View().MouseMode != tea.MouseModeAllMotion {
+		t.Fatal("the pointer is not followed without a button")
+	}
+	found := false
+	for y := 0; y < m.geom.Cells.Y && !found; y++ {
+		for x := 0; x < m.geom.Cells.X && !found; x++ {
+			mouse(m, tea.MouseMotionMsg{X: x, Y: y})
+			found = len(m.hover) > 0
+		}
+	}
+	if !found {
+		t.Fatal("no link found under the pointer")
+	}
+	if bytes.Equal(m.last.Pix, plain.Pix) {
+		t.Fatal("the link is not tinted")
+	}
+	mouse(m, tea.MouseMotionMsg{X: 0, Y: 0})
+	if m.hover != nil || !bytes.Equal(m.last.Pix, plain.Pix) {
+		t.Fatal("the tint stayed after the pointer left")
+	}
+}

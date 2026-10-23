@@ -16,6 +16,13 @@ type Palette struct {
 	Syntax                                                                 *chroma.Style
 }
 
+// mark is the tint of a Mark: the selection's color halfway to the page.
+func (p Palette) mark() color.RGBA {
+	mid := func(a, b uint8) uint8 { return uint8((int(a) + int(b)) / 2) }
+	s, b := p.Selection, p.Background
+	return color.RGBA{mid(s.R, b.R), mid(s.G, b.G), mid(s.B, b.B), 255}
+}
+
 func rgb(n uint32) color.RGBA {
 	return color.RGBA{R: uint8(n >> 16), G: uint8(n >> 8), B: uint8(n), A: 255}
 }

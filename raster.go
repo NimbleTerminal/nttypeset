@@ -16,8 +16,25 @@ type RasterOptions struct {
 	Palette Palette // the colors to paint with
 	// Selection is the text to highlight behind its runs, in Palette.Selection.
 	// A Selected from another Layout is ignored.
-	Selection    *Selected
+	Selection *Selected
+	// Marks are stretches of text to tint behind their runs, as for the link
+	// under a pointer: Palette.Selection halfway to Palette.Background, under
+	// any Selection. A Mark of no text, as a picture's, draws nothing.
+	Marks        []Mark
 	OmitAnimated bool // leave Animated images as background for the caller to composite
+}
+
+// Mark is a stretch of a paragraph's text: the runes [Start, End) of a
+// paragraph of a block, the same at every width. A Link says the Mark of
+// its line of text.
+type Mark struct {
+	Block, Para, Start, End int
+}
+
+// Mark is the stretch of text the link covers on its line; nothing for a
+// picture's link.
+func (k Link) Mark() Mark {
+	return Mark{Block: k.Block, Para: k.Para, Start: k.Runes[0], End: k.Runes[1]}
 }
 
 // Link is a link hit area.
@@ -100,6 +117,12 @@ func (l *Layout) rasterTo(v View, w, h int, opts RasterOptions) *image.RGBA {
 			xdraw.CatmullRom.Scale(out, r, op.asset, op.asset.Bounds(), draw.Over, nil)
 		case op.run != nil:
 			ink := p.runInk(op)
+			for _, m := range opts.Marks {
+				if x0, x1, ok := markSpan(m, op); ok {
+					hr := image.Rect(int(math.Round(float64(x0-v.Left)*scale)), r.Min.Y, int(math.Round(float64(x1-v.Left)*scale)), r.Max.Y)
+					draw.Draw(out, hr, image.NewUniform(p.mark()), image.Point{}, draw.Src)
+				}
+			}
 			if x0, x1, ok := opts.Selection.span(l, i, op); ok {
 				hr := image.Rect(int(math.Round(float64(x0-v.Left)*scale)), r.Min.Y, int(math.Round(float64(x1-v.Left)*scale)), r.Max.Y)
 				draw.Draw(out, hr, image.NewUniform(p.Selection), image.Point{}, draw.Src)
@@ -153,4 +176,14 @@ func (l *Layout) Images(v View) []Placed {
 		}
 	}
 	return out
+}
+
+// markSpan is the page x range of the part of a text operation a mark
+// covers.
+func markSpan(m Mark, op *operation) (x0, x1 int, ok bool) {
+	if op.run == nil || op.gutter || op.block != m.Block || op.para != m.Para {
+		return 0, 0, false
+	}
+	off, count := op.run.Runes.Offset, op.run.Runes.Count
+	return runSpan(op, max(m.Start, off)-off, min(m.End, off+count)-off)
 }

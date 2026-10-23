@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"slices"
 	"unicode/utf8"
 
 	"charm.land/bubbles/v2/key"
@@ -42,6 +43,7 @@ type viewer struct {
 	dragFrom image.Point          // the page point where the drag began
 	dragTo   image.Point          // the page point the selection's focus last followed
 	note     string               // the last action's result, shown until the next key or click
+	hover    []nttypeset.Mark     // the lines of the link under the pointer, tinted
 }
 
 func show(ctx context.Context, p *page, eng *nttypeset.Engine, o options) error {
@@ -223,6 +225,46 @@ func (m *viewer) pageAt(x, y int, clamp bool) (image.Point, bool) {
 	return m.view.Unproject(image.Pt(px, py)), true
 }
 
+// hoverAt tints the link under cell x, y, every line of it, and untints the
+// one the pointer left.
+func (m *viewer) hoverAt(x, y int) tea.Cmd {
+	var marks []nttypeset.Mark
+	if p, ok := m.pageAt(x, y, false); ok && m.lay != nil {
+		links := m.lay.Links(nttypeset.View{Height: m.lay.Extent(), Width: m.lay.Width(), Scale: 1})
+		for i, k := range links {
+			if p.In(k.Rect) {
+				marks = linkMarks(links, i)
+				break
+			}
+		}
+	}
+	if slices.Equal(marks, m.hover) {
+		return nil
+	}
+	m.hover = marks
+	return m.redraw()
+}
+
+// linkMarks are the marks of the link that links[i] is a line of: the lines
+// beside it of the same URL whose runes meet it.
+func linkMarks(links []nttypeset.Link, i int) []nttypeset.Mark {
+	one := func(a, b nttypeset.Link) bool {
+		return a.URL == b.URL && a.Block == b.Block && a.Para == b.Para && a.Runes[1] >= b.Runes[0]
+	}
+	first, last := i, i
+	for first > 0 && one(links[first-1], links[first]) {
+		first--
+	}
+	for last+1 < len(links) && one(links[last], links[last+1]) {
+		last++
+	}
+	var marks []nttypeset.Mark
+	for _, k := range links[first : last+1] {
+		marks = append(marks, k.Mark())
+	}
+	return marks
+}
+
 // mouse follows a left drag over the page and says whether the message was
 // the page's, so that nothing else answers it. The page ignores buttons other
 // than the left; Shift and Alt drags are left to the terminal.
@@ -249,7 +291,7 @@ func (m *viewer) mouse(msg tea.Msg) (tea.Cmd, bool) {
 		return cmd, true
 	case tea.MouseMotionMsg:
 		if !m.dragging {
-			return nil, false
+			return m.hoverAt(msg.X, msg.Y), true
 		}
 		p, ok := m.pageAt(msg.X, msg.Y, true)
 		if !ok || (p == m.dragTo && m.sel != nil) {
@@ -348,7 +390,7 @@ func (m *viewer) redraw() tea.Cmd {
 		}
 	}
 	v := nttypeset.View{Top: m.top, Width: width, Height: m.height, Scale: scale, Pixels: g.Pixels}
-	img, err := m.page.render(m.ctx, m.lay, v, m.o.dark, shown)
+	img, err := m.page.render(m.ctx, m.lay, v, m.o.dark, shown, m.hover)
 	if err != nil {
 		m.err = err
 		return nil
@@ -382,7 +424,7 @@ func (m *viewer) View() tea.View {
 	}
 	v := tea.NewView(m.pic.View() + "\n" + status + "\n" + m.HelpKeys().View(m.width))
 	v.AltScreen = true
-	v.MouseMode = tea.MouseModeCellMotion
+	v.MouseMode = tea.MouseModeAllMotion // Motion with no button held, for the link under the pointer.
 	return v
 }
 

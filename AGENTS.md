@@ -90,7 +90,7 @@ Root package `nttypeset`:
 | `highlight.go` | `Highlight`: chroma tokens as styled spans. |
 | `view.go` | `View`: the region of the page and the raster it maps to; `Project` and `Unproject`. |
 | `palette.go` | `Palette`, `LightPalette`, `DarkPalette`. |
-| `raster.go` | `Layout.Raster`, `Links`, `Images`, `RasterOptions`; draws the display list. |
+| `raster.go` | `Layout.Raster`, `Links`, `Images`, `RasterOptions` with its `Marks` (`Mark`, `Link.Mark`); draws the display list. |
 | `select.go` | `Place`, `Selection`, `Selected`, `Layout.Select`: logical selection and carets; `Hit` and `Layout.TextAt`, the text under a point. |
 | `preview.go` | `Preview`: the font chooser picture. |
 | `export_test.go` | Test-only access to unexported engine methods. |
