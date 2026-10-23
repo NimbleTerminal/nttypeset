@@ -53,6 +53,7 @@ type LayoutOptions struct {
 // changed while the Layout is in use.
 type Layout struct {
 	starts         []int
+	bounds         []image.Rectangle // Around what each laid block drew.
 	glyphs         int
 	spent          time.Duration
 	e              *Engine
@@ -176,6 +177,11 @@ func (l *Layout) Laid() int { return l.next }
 
 // Starts returns the top y of each laid block, a copy.
 func (l *Layout) Starts() []int { return append([]int(nil), l.starts...) }
+
+// Bounds returns, for each laid block, the page rectangle around all it
+// drew, without the space after it, a copy. A block that drew nothing has
+// an empty one.
+func (l *Layout) Bounds() []image.Rectangle { return append([]image.Rectangle(nil), l.bounds...) }
 
 // Extent returns the laid height plus the bottom margin.
 func (l *Layout) Extent() int { return l.y + Margin }
@@ -388,10 +394,10 @@ func (l *Layout) ensure(bottom int) {
 // cancelled request or a limit, the layout is left as it was before the
 // block, so that the next request can take it up again.
 func (l *Layout) block() {
-	starts, ops, y, next, glyphs := len(l.starts), len(l.ops), l.y, l.next, l.glyphs
+	starts, bounds, ops, y, next, glyphs := len(l.starts), len(l.bounds), len(l.ops), l.y, l.next, l.glyphs
 	defer func() {
 		if p := recover(); p != nil {
-			l.starts, l.ops, l.y, l.next, l.glyphs = l.starts[:starts], l.ops[:ops], y, next, glyphs
+			l.starts, l.bounds, l.ops, l.y, l.next, l.glyphs = l.starts[:starts], l.bounds[:bounds], l.ops[:ops], y, next, glyphs
 			panic(p)
 		}
 	}()
@@ -476,11 +482,14 @@ func (l *Layout) block() {
 		if l.y+Margin > l.e.limits.Height || len(l.ops) > l.e.limits.Operations {
 			l.displayListLimit()
 		}
+		var drawn image.Rectangle
 		for _, op := range l.ops[ops:] {
 			if op.run != nil {
 				l.extentX = max(l.extentX, op.rect.Max.X)
 			}
+			drawn = drawn.Union(op.rect)
 		}
+		l.bounds = append(l.bounds, drawn)
 	}
 }
 

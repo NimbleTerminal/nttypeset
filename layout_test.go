@@ -341,7 +341,7 @@ func TestLayoutLimits(t *testing.T) {
 	if err := l.Complete(ctx); !errors.Is(err, ErrLimit) {
 		t.Fatalf("paragraph: %v", err)
 	}
-	if l.Laid() != 0 || len(l.Starts()) != 0 {
+	if l.Laid() != 0 || len(l.Starts()) != 0 || len(l.Bounds()) != 0 {
 		t.Fatal("failed block was kept")
 	}
 	glyphs := &Document{}
@@ -414,8 +414,8 @@ func TestCancelledEnsureRollsBackOneBlock(t *testing.T) {
 	if err := lay.Ensure(countdown{ctx, &left}, 1<<30); !errors.Is(err, context.Canceled) {
 		t.Fatalf("countdown did not cancel the layout: %v", err)
 	}
-	if len(lay.Starts()) != lay.Laid() || lay.Done() {
-		t.Fatalf("layout inconsistent after cancel: %d starts, %d of %d blocks", len(lay.Starts()), lay.Laid(), len(doc.Blocks))
+	if len(lay.Starts()) != lay.Laid() || len(lay.Bounds()) != lay.Laid() || lay.Done() {
+		t.Fatalf("layout inconsistent after cancel: %d starts, %d bounds, %d of %d blocks", len(lay.Starts()), len(lay.Bounds()), lay.Laid(), len(doc.Blocks))
 	}
 	partial := lay.Laid()
 	if err := lay.Complete(ctx); err != nil || lay.Laid() <= partial {
@@ -1006,6 +1006,38 @@ func TestTextReusesShapingWithCallerHrefs(t *testing.T) {
 	for _, link := range second {
 		if link.URL != "https://two.example/" {
 			t.Fatal("cache reused wrong link", link.URL)
+		}
+	}
+}
+
+// Bounds holds each laid block's drawing: a table from its header's top to
+// its last row's border, short of the next block, with the space between
+// them outside both.
+func TestLayoutBounds(t *testing.T) {
+	e := testEngine(t)
+	doc := &Document{Blocks: []Block{
+		{Kind: KindParagraph, Spans: []Span{{Text: "before"}}},
+		{Kind: KindTable, Rows: [][][]Span{{{{Text: "head"}}, {{Text: "er"}}}, {{{Text: "a"}}, {{Text: "b"}}}}},
+		{Kind: KindParagraph, Spans: []Span{{Text: "after"}}},
+	}}
+	l := mustLayout(t, e, doc, 600, LayoutOptions{})
+	if err := l.Complete(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	bounds, starts := l.Bounds(), l.Starts()
+	if len(bounds) != l.Laid() {
+		t.Fatalf("%d bounds for %d blocks", len(bounds), l.Laid())
+	}
+	table := bounds[1]
+	if table.Min.Y != starts[1] || table.Max.Y >= starts[2] || table.Max.Y <= table.Min.Y {
+		t.Fatalf("table %v between starts %v", table, starts)
+	}
+	if table.Min.X != Margin || table.Max.X != 600-Margin {
+		t.Fatalf("table %v is not the text width", table)
+	}
+	for i, b := range bounds {
+		if b.Empty() || b.Min.Y < starts[i] {
+			t.Fatalf("block %d: %v from %d", i, b, starts[i])
 		}
 	}
 }

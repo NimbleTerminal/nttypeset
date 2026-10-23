@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `Layout.Bounds` gives the page rectangle around what each laid block drew, so a caller can find a table or a heading without knowing the spacing between blocks.
+
 ## v0.1.1 - 2026-10-19
 
 - `View.Unproject` maps a raster pixel back to the page point it was projected from, the inverse of `Project`.
