@@ -108,7 +108,7 @@ compiled to WebAssembly and shown through booba and ghostty-web.
   text under a point.
 - Selection: `Select` turns two points on the page into logical text and a
   highlight that `Raster` draws; `RasterOptions.Marks` tints any stretches of
-  text behind their glyphs, as the link under a pointer (`Link.Mark`); `View.Unproject` maps a raster pixel back to
+  text behind their glyphs in `Palette.Mark`, as the link under a pointer (`Link.Mark`); `View.Unproject` maps a raster pixel back to
   the page.
 - `Highlight` and `Lines`: chroma tokens as styled spans, and source as a
   document, with an optional gutter of line numbers or unwrapped lines through

@@ -3,6 +3,7 @@ package nttypeset
 import (
 	"context"
 	"image"
+	"image/color"
 	"testing"
 )
 
@@ -118,6 +119,12 @@ func TestRasterMarks(t *testing.T) {
 	if tinted == 0 {
 		t.Fatal("the mark drew nothing")
 	}
+	// A palette's own Mark color replaces the blend.
+	p.Mark = color.RGBA{0x12, 0x34, 0x56, 255}
+	if count(raster(RasterOptions{Marks: []Mark{link.Mark()}}), p.Mark) == 0 {
+		t.Fatal("the palette's Mark color was not used")
+	}
+	p.Mark = color.RGBA{}
 	if other := raster(RasterOptions{Marks: []Mark{{Block: 0, Para: 1, Start: 0, End: 99}, {Block: 0, Para: 0, Start: 2, End: 2}}}); !other.Bounds().Eq(plain.Bounds()) || string(other.Pix) != string(plain.Pix) {
 		t.Fatal("a mark of no text drew")
 	}
@@ -130,4 +137,17 @@ func TestRasterMarks(t *testing.T) {
 	if both.RGBAAt(corner.X, corner.Y) != p.Selection {
 		t.Fatalf("under a selection the mark shows: %v", both.RGBAAt(corner.X, corner.Y))
 	}
+}
+
+// count is how many pixels of img are c.
+func count(img *image.RGBA, c color.RGBA) int {
+	n := 0
+	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
+		for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
+			if img.RGBAAt(x, y) == c {
+				n++
+			}
+		}
+	}
+	return n
 }
