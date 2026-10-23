@@ -3,7 +3,7 @@
 ## Unreleased
 
 - `RasterOptions.Marks` tints stretches of text behind their glyphs, in the selection's color halfway to the page, as for the link under a pointer; `Link.Mark` gives a link line's `Mark`.
-- `examples/typeset` tints the link under the pointer, every line of it.
+- `examples/typeset` tints the link under the pointer, every line of it, and turns the mouse off a moment before quitting, so no mouse report is left at the shell prompt.
 
 ## v0.1.2 - 2026-10-22
 

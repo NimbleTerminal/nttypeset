@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"slices"
+	"time"
 	"unicode/utf8"
 
 	"charm.land/bubbles/v2/key"
@@ -17,6 +18,17 @@ import (
 
 // scrollStep is one j/k press, in layout pixels.
 const scrollStep = 60
+
+// mouseSettle is how long quitting waits, with mouse reporting turned off,
+// before giving the terminal back. Bubble Tea stops reading before it turns
+// reporting off, so a report sent as the user quit, the pointer still moving,
+// would be left for the shell, typed at its prompt; read here, it is dropped.
+const mouseSettle = 50 * time.Millisecond
+
+func settleMouse() tea.Msg {
+	time.Sleep(mouseSettle)
+	return nil
+}
 
 // viewer is the terminal program: the page in an ntpicture Picture, rastered
 // at the picture's own device pixels so the terminal copies the raster rather
@@ -44,6 +56,7 @@ type viewer struct {
 	dragTo   image.Point          // the page point the selection's focus last followed
 	note     string               // the last action's result, shown until the next key or click
 	hover    []nttypeset.Mark     // the lines of the link under the pointer, tinted
+	quitting bool                 // q or Q was pressed: the mouse is off while the program settles
 }
 
 func show(ctx context.Context, p *page, eng *nttypeset.Engine, o options) error {
@@ -106,6 +119,12 @@ func (m *viewer) HelpKeys() demorun.Keys { return m.bindings().keys() }
 func (m *viewer) Init() tea.Cmd { return m.pic.Init() }
 
 func (m *viewer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.quitting {
+		switch msg.(type) {
+		case tea.KeyPressMsg, tea.MouseMsg:
+			return m, nil // What is still typed or pointed at is dropped.
+		}
+	}
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		return m.key(msg)
@@ -143,9 +162,11 @@ func (m *viewer) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	switch {
 	case key.Matches(msg, b.quit):
-		return m, tea.Sequence(m.pic.Close(), tea.Quit)
+		m.quitting = true
+		return m, tea.Sequence(m.pic.Close(), settleMouse, tea.Quit)
 	case key.Matches(msg, b.keep):
-		return m, tea.Sequence(m.pic.Keep(), tea.Quit)
+		m.quitting = true
+		return m, tea.Sequence(m.pic.Keep(), settleMouse, tea.Quit)
 	case key.Matches(msg, b.down):
 		m.top += scrollStep
 	case key.Matches(msg, b.up):
@@ -425,6 +446,9 @@ func (m *viewer) View() tea.View {
 	v := tea.NewView(m.pic.View() + "\n" + status + "\n" + m.HelpKeys().View(m.width))
 	v.AltScreen = true
 	v.MouseMode = tea.MouseModeAllMotion // Motion with no button held, for the link under the pointer.
+	if m.quitting {
+		v.MouseMode = tea.MouseModeNone // See mouseSettle.
+	}
 	return v
 }
 

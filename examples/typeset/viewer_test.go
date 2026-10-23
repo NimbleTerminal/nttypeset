@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
@@ -310,5 +311,28 @@ func TestViewerHoverMarksLink(t *testing.T) {
 	mouse(m, tea.MouseMotionMsg{X: 0, Y: 0})
 	if m.hover != nil || !bytes.Equal(m.last.Pix, plain.Pix) {
 		t.Fatal("the tint stayed after the pointer left")
+	}
+}
+
+// Quitting turns mouse reporting off and waits before giving the terminal
+// back, dropping what the pointer still reports, so no report is left for
+// the shell to show at its prompt.
+func TestViewerQuitSettlesMouse(t *testing.T) {
+	m := newTestViewer(t)
+	if press(m, 'q') == nil {
+		t.Fatal("q did not quit")
+	}
+	if mode := m.View().MouseMode; mode != tea.MouseModeNone {
+		t.Fatalf("mouse mode %v while quitting", mode)
+	}
+	if mouse(m, tea.MouseMotionMsg{X: 1, Y: 1}) != nil || m.hover != nil {
+		t.Fatal("a report after quitting was acted on")
+	}
+	if press(m, 'q') != nil {
+		t.Fatal("a second q quit again")
+	}
+	start := time.Now()
+	if settleMouse() != nil || time.Since(start) < mouseSettle {
+		t.Fatal("the settle did not wait")
 	}
 }
