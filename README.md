@@ -93,10 +93,22 @@ task run-typeset -- -numbers -select 3.0-5.10 -o page.png layout.go
 `examples/specimen` shows one row per look from `Preview`:
 `task run-specimen -- -dark`, or `-o specimen.png`.
 
+`examples/hackernews` fetches the live Hacker News front page and typesets its
+orange header, ranked stories and metadata in the HN palette. Use `j`/`k` to
+select a story, `Enter` to open it, `c` for comments, `y` to copy its URL and
+`r` to refresh; `+`/`=` zooms in, `-` zooms out, and `0` resets zoom. Zoom
+ranges from 50% to 200%, reflowing text while keeping the selected story visible.
+Links also respond to the mouse. Run it with
+`task run-hackernews`, or export it with `task run-hackernews -- -o hn.png`.
+Network access to the official Hacker News API is required. This example is
+also available in the browser site as `?demo=hackernews`.
+
 ### Browser demos
 
-Both demos run in the browser at `https://nimbleterminal.github.io/nttypeset/`,
+All three demos run in the browser at `https://nimbleterminal.github.io/nttypeset/`,
 compiled to WebAssembly and shown through booba and ghostty-web.
+The Hacker News demo fetches the public API directly, with no proxy; browser
+links open in a new tab, with a clickable fallback if popups are blocked.
 `task serve-wasm-site` serves the same site locally.
 
 ## What you get

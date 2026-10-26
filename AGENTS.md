@@ -40,9 +40,10 @@ task build cross-windows cross-wasm
 task notices             # regenerate THIRD_PARTY_NOTICES.md after dependency changes
 task run-typeset         # the demo: task run-typeset -- -dark FILE
 task run-specimen        # the font specimen: task run-specimen -- -dark
-task build-examples      # bin/nttypeset-typeset, bin/nttypeset-specimen
+task run-hackernews      # the live HN reader; -o hackernews.png exports a PNG
+task build-examples      # bin/nttypeset-{typeset,specimen,hackernews}
 task build-wasm-site     # the browser site in web/, then check-site
-task check-site          # Node checks of web/ and both demos
+task check-site          # Node checks of web/ and all demos
 task serve-wasm-site     # serve web/ at http://localhost:8000/nttypeset/
 task test-wasm           # examples tests under js/wasm with Node
 task clean
@@ -106,6 +107,7 @@ Other packages:
 | `internal/tools/notices` | Generates `THIRD_PARTY_NOTICES.md` (`task notices`). |
 | `examples/typeset` | The demo (separate module): a Markdown or text file in the terminal through ntpicture, with mouse selection and `y` to copy, or as a PNG with `-o`. |
 | `examples/specimen` | The font specimen: one row per look from `Preview`, in the terminal or as a PNG with `-o`. |
+| `examples/hackernews` | A live Hacker News front-page reader in the HN palette, with story and comment links, in the terminal or as a PNG with `-o`; also available in the browser site. |
 | `examples/internal/demorun` | Publishes a demo's keys as booba actions and runs it; `demorun.Check` and the `...KeysFitBooba` tests guard booba's 2048-byte status-message cap. |
 | `examples/internal/pixels` | The demos' shared test helper: counts pixels that differ from a colour. |
 | `web/` | The Pages site: `index.html`, `site.js`, `site.css` and `licenses/` are source; `demos/`, `booba/`, `ghostty-web/` and the copied files are build output. |

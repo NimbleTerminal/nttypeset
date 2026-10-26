@@ -17,10 +17,11 @@ task cross-wasm          # check js/wasm compilation
 task notices             # regenerate THIRD_PARTY_NOTICES.md
 task run-typeset         # the demo: task run-typeset -- -dark -font technical FILE
 task run-specimen        # the font specimen: task run-specimen -- -dark
-task build-examples      # bin/nttypeset-typeset, bin/nttypeset-specimen
+task run-hackernews      # the live HN reader; -o hackernews.png exports a PNG
+task build-examples      # bin/nttypeset-{typeset,specimen,hackernews}
 task build-wasm          # the browser demos in web/demos/
 task build-wasm-site     # the whole browser site in web/, then check-site
-task check-site          # Node checks of web/ and both demos
+task check-site          # Node checks of web/ and all demos
 task serve-wasm-site     # serve web/ at http://localhost:8000/nttypeset/
 task test-wasm           # examples tests under js/wasm with Node
 task vulncheck-wasm      # govulncheck on the browser build
@@ -69,7 +70,7 @@ every machine. `task notices-check` enforces that generated text in CI.
 
 ## Browser site
 
-Both demos run in the browser at `https://nimbleterminal.github.io/nttypeset/`.
+All three demos run in the browser at `https://nimbleterminal.github.io/nttypeset/`.
 They are compiled to js/wasm and shown through go-booba and ghostty-web. The
 site is the `web/` directory: `index.html`, `site.js`, `site.css` and
 `licenses/` are source, and everything else the build puts there is output.
@@ -81,10 +82,11 @@ Native builds and `GOWORK=off` tasks never see it. `go work sync` bumps the root
 `go 1.26.0`.
 
 ```sh
-task build-wasm          # web/demos/typeset.wasm and specimen.wasm
+task build-wasm          # web/demos/{typeset,specimen,hackernews}.wasm
 task build-wasm-site     # build-wasm, export the booba runtime, copy LICENSE and notices, check-site
 task check-site          # script syntax, required assets, and each demo under Node
 task serve-wasm-site     # builds the site, serves it at http://localhost:8000/nttypeset/
+# Add SERVE_PORT=8001 when port 8000 is in use.
 task test-wasm           # the examples module's tests under js/wasm with Node
 task vulncheck-wasm      # govulncheck on the browser build (requires network)
 ```
@@ -94,7 +96,8 @@ and `web/THIRD_PARTY_NOTICES.md` are ignored and never committed.
 `task clean` removes them.
 
 The wasm files are large: typeset.wasm is 23.2 MB raw (about 5.8 MB gzipped) and
-specimen.wasm is 20.7 MB raw. That size is accepted.
+specimen.wasm is 20.7 MB raw. The Hacker News demo also bundles the HTTP client.
+That size is accepted.
 
 The demos publish their keys to booba as actions through
 `examples/internal/demorun`. Booba caps its status message at 2048 bytes, so
@@ -115,7 +118,12 @@ maintainer enables Pages on the repository once, with the source set to GitHub
 Actions.
 
 The Node smoke script runs the wasm and checks its output; it is not a visual check.
-Before announcing a site change, run `task serve-wasm-site`, open both demos in
+Hacker News uses mocked Fetch responses in the smoke check, including an API
+failure and retry, so CI does not depend on the live service. Browser navigation
+uses the page host function `nttypesetOpenURL`; the native opener remains separate.
+The page retains a real link as a fallback for popup blockers. Initial loading
+and refresh run asynchronously, so API errors can be retried with `r`.
+Before announcing a site change, run `task serve-wasm-site`, open the demos in
 a browser, scroll, cycle the looks, toggle dark and mono, drag over the page
 and press `y` and check the clipboard, scroll with the wheel, and record what you saw.
 
