@@ -14,7 +14,7 @@ for (const file of [
 const html = await readFile('web/index.html', 'utf8');
 assert.ok(html.includes('id="source"'), 'demo source link present');
 const demos = [...html.matchAll(/data-demo="([^"]+)"/g)].map(m => m[1]);
-assert.deepEqual(demos, ['typeset', 'specimen'], 'demo cards');
+assert.deepEqual(demos, ['typeset', 'specimen', 'hackernews'], 'demo cards');
 for (const demo of demos) {
   const bytes = await readFile(`web/demos/${demo}.wasm`);
   assert.deepEqual([...bytes.subarray(0, 4)], [0, 97, 115, 109], `${demo}: WASM header`);

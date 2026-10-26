@@ -1,7 +1,8 @@
 import { BoobaTerminal, installActionBar, installRendererHud, parseRendererFromURL } from './booba/booba.js';
 
-const demos = { typeset: 'Typeset a page', specimen: 'Font specimen' };
+const demos = { typeset: 'Typeset a page', specimen: 'Font specimen', hackernews: 'Hacker News' };
 const help = {
+  hackernews: 'j/k or arrows select a story · Enter or o opens it · c opens comments · y copies the URL · r refreshes · +/= zooms in · - zooms out · 0 resets zoom · space/PgUp page · g/G ends · Q keeps the screen · q quits. Fetches the public Hacker News API directly from your browser.',
   typeset: 'j/k or arrows scroll · space and PgUp page · g/G ends · d dark · f next look · m mono · t glyph/Kitty · n numbers · c chop · drag selects · y copies · Esc clears · Q keeps the screen · q quits. Click the terminal to focus.',
   specimen: 'd dark · m mono · t glyph/Kitty · Q keeps the screen · q quits. Click the terminal to focus.',
 };
@@ -23,9 +24,19 @@ function failed(error) {
   status.textContent = `Could not run the demo: ${error.message}. Try Restart.`;
   console.error(error);
 }
+// Go's browser build calls this host function for navigation. Keep a real
+// anchor available because browser popup policies vary for asynchronous input.
+globalThis.nttypesetOpenURL = raw => {
+  const url = new URL(raw);
+  if (!['https:', 'http:', 'mailto:'].includes(url.protocol)) throw new Error('Unsupported link protocol');
+  const fallback = document.querySelector('#opened-link');
+  fallback.querySelector('a').href = url.href;
+  fallback.hidden = false;
+  window.open(url.href, '_blank', 'noopener,noreferrer');
+};
 async function main() {
   const go = new Go();
-  status.textContent = 'Downloading the demo (about 6 MB)…';
+  status.textContent = 'Downloading the demo…';
   const response = await fetch(`demos/${demo}.wasm`);
   if (!response.ok) throw new Error(`Download failed (${response.status})`);
   const { instance } = await WebAssembly.instantiateStreaming(response, go.importObject);
@@ -51,6 +62,8 @@ async function main() {
     position: 'absolute',
     bindToggleHotkey: false,
   });
-  status.textContent = 'Running locally in your browser. No terminal server required.';
+  status.textContent = demo === 'hackernews'
+    ? 'Running locally in your browser. Story data comes directly from the Hacker News API; press r to retry or refresh.'
+    : 'Running locally in your browser. No terminal server required.';
 }
 main().catch(failed);

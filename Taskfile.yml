@@ -73,17 +73,21 @@ tasks:
       - go build -mod=readonly ./...
       - task: build-examples
   build-examples:
-    desc: Build bin/nttypeset-typeset and bin/nttypeset-specimen
+    desc: Build bin/nttypeset-typeset, bin/nttypeset-specimen and bin/nttypeset-hackernews
     cmds:
       - mkdir -p bin
       - go -C examples build -mod=readonly -o ../bin/nttypeset-typeset ./typeset
       - go -C examples build -mod=readonly -o ../bin/nttypeset-specimen ./specimen
+      - go -C examples build -mod=readonly -o ../bin/nttypeset-hackernews ./hackernews
   run-typeset:
     desc: Run the demo (task run-typeset -- -dark FILE)
     cmds: ['go -C examples run -mod=readonly ./typeset {{.CLI_ARGS}}']
   run-specimen:
     desc: Run the font specimen (task run-specimen -- -dark)
     cmds: ['go -C examples run -mod=readonly ./specimen {{.CLI_ARGS}}']
+  run-hackernews:
+    desc: Read the live Hacker News front page
+    cmds: ['go -C examples run -mod=readonly ./hackernews {{.CLI_ARGS}}']
   cross-windows:
     desc: Check Windows compilation
     env: {GOOS: windows, GOARCH: amd64, CGO_ENABLED: '0'}
@@ -92,6 +96,7 @@ tasks:
       - mkdir -p dist
       - go -C examples build -mod=readonly -o ../dist/nttypeset-typeset.exe ./typeset
       - go -C examples build -mod=readonly -o ../dist/nttypeset-specimen.exe ./specimen
+      - go -C examples build -mod=readonly -o ../dist/nttypeset-hackernews.exe ./hackernews
   cross-wasm:
     desc: Check js/wasm compilation
     env: {GOOS: js, GOARCH: wasm, CGO_ENABLED: '0'}
@@ -126,7 +131,7 @@ tasks:
       CGO_ENABLED: '0'
     cmds:
       - mkdir -p web/demos
-      - for: [typeset, specimen]
+      - for: [typeset, specimen, hackernews]
         cmd: go -C examples build -mod=readonly -trimpath -ldflags='-s -w' -o ../web/demos/{{.ITEM}}.wasm ./{{.ITEM}}
   build-wasm-site:
     desc: Build the browser demos and export the pinned booba runtime into web/
@@ -136,21 +141,24 @@ tasks:
       - cp LICENSE THIRD_PARTY_NOTICES.md web/
       - task: check-site
   check-site:
-    desc: Check site script syntax, required assets, and both demos under Node
+    desc: Check site script syntax, required assets, and all demos under Node
     cmds:
       - node --check web/site.js
       - node scripts/check-site.mjs
       - node scripts/smoke-demo.mjs typeset
       - node scripts/smoke-demo.mjs specimen
+      - node scripts/smoke-demo.mjs hackernews
       - node scripts/smoke-demo.mjs typeset keep
   serve-wasm-site:
     desc: Serve web/ at http://localhost:8000/nttypeset/ (matches the Pages prefix)
     deps: [build-wasm-site]
-    vars: {SERVE_DIR: /tmp/nttypeset-site}
+    vars:
+      SERVE_DIR: /tmp/nttypeset-site
+      SERVE_PORT: '{{.SERVE_PORT | default "8000"}}'
     cmds:
       - mkdir -p "{{.SERVE_DIR}}"
       - ln -sfn "$PWD/web" "{{.SERVE_DIR}}/nttypeset"
-      - python3 -m http.server 8000 --bind 127.0.0.1 --directory "{{.SERVE_DIR}}"
+      - python3 -m http.server {{.SERVE_PORT}} --bind 127.0.0.1 --directory "{{.SERVE_DIR}}"
   test-wasm:
     desc: Test the examples module under js/wasm with Node
     env:
