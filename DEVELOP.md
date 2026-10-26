@@ -128,3 +128,7 @@ The `nimbleterminal.dev/nttypeset` `go-import` metadata already resolves to
 `github.com/NimbleTerminal/nttypeset`. To release, update CHANGELOG.md, run
 `task ci`, review dependency licenses and commit. Then tag the intended
 version, push the tag, and verify the version on pkg.go.dev once tag CI passes.
+
+The section model and adapter contract are documented in [docs/sections.md](docs/sections.md).
+`go run ./internal/tools/sections` regenerates the illustrative before/after PNGs;
+they are demonstration artifacts, never pixel-test reference data.

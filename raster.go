@@ -108,6 +108,8 @@ func (l *Layout) rasterTo(v View, w, h int, opts RasterOptions) *image.RGBA {
 			continue
 		}
 		switch {
+		case op.explicitFill:
+			draw.Draw(out, r, &image.Uniform{C: op.ink}, image.Point{}, draw.Over)
 		case op.fill != fillNone:
 			draw.Draw(out, r, &image.Uniform{C: p.fillColor(op.fill)}, image.Point{}, draw.Src)
 		case op.asset != nil:

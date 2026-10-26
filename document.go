@@ -128,20 +128,23 @@ type Image struct {
 // Block is one laid-out unit of a Document: a paragraph, heading, quote line,
 // code block, rule, image or table.
 type Block struct {
-	Kind   Kind
-	Spans  []Span
-	Rows   [][][]Span // Table: rows of cells of spans; the first row is the header
-	Size   int        // font size in layout pixels; zero is 25, negative or over 1,024 is a *LimitError
-	Indent int        // layout pixels left of the margin
-	Quotes []Quote
-	Image  *Image // Kind == KindImage
-	Href   string // Image: the link around it
+	SourceID string       // opaque caller identity; empty means none
+	Format   *BlockFormat // resolved spacing; nil keeps semantic defaults
+	Kind     Kind
+	Spans    []Span
+	Rows     [][][]Span // Table: rows of cells of spans; the first row is the header
+	Size     int        // font size in layout pixels; zero is 25, negative or over 1,024 is a *LimitError
+	Indent   int        // layout pixels left of the margin
+	Quotes   []Quote
+	Image    *Image // Kind == KindImage
+	Href     string // Image: the link around it
 }
 
 // Document is what the layout consumes: blocks in reading order. Lines says
 // the blocks are a file's lines, one each, which enables gutter numbers and
 // chop in LayoutOptions.
 type Document struct {
-	Blocks []Block
-	Lines  bool
+	Sections []Section // nested, noncrossing ranges; see Section
+	Blocks   []Block
+	Lines    bool
 }

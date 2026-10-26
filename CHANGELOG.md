@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Nested section backgrounds, padding, solid borders and spacing; resolved block formatting; source IDs with incremental anchor bounds and hit/selection identity lookup.
+
 ## v0.1.3 - 2026-10-23
 
 - `RasterOptions.Marks` tints stretches of text behind their glyphs, in `Palette.Mark`, or when that is left zero the selection's color halfway to the page, as for the link under a pointer; `Link.Mark` gives a link line's `Mark`.

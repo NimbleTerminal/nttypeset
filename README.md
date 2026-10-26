@@ -127,3 +127,11 @@ crosses the public API, including on corrupt font bytes.
 ## License
 
 MIT; see [LICENSE](./LICENSE) and [NOTICE.md](./NOTICE.md).
+
+## Styled sections and source IDs
+
+Nested `Document.Sections` preserve backgrounds, padding and solid borders
+around block ranges. `Block.Format` supplies resolved spacing and line height;
+blocks and sections can carry opaque `SourceID` values. Use
+`Layout.AnchorBounds` for navigation and `Layout.SourceAt` for hit/selection
+identity. See [the bridge contract and before/after example](docs/sections.md).

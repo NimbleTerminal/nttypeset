@@ -33,6 +33,7 @@ type operation struct {
 	destination    string
 	animated       bool
 	fill           fillRole
+	explicitFill   bool
 	// A text run's place: the paragraph's runes, and which paragraph of
 	// which block it is, the same at every width.
 	text        []rune
@@ -52,6 +53,11 @@ type LayoutOptions struct {
 // its Engine it is not safe for concurrent use, and the Document must not be
 // changed while the Layout is in use.
 type Layout struct {
+	sectionStarts  [][]int
+	sectionBounds  []image.Rectangle
+	active         []sectionSegment
+	anchors        map[string]anchorRef
+	lineHeight     int
 	starts         []int
 	bounds         []image.Rectangle // Around what each laid block drew.
 	glyphs         int
@@ -111,7 +117,11 @@ func (e *Engine) Layout(doc *Document, width int, opts LayoutOptions) (*Layout, 
 	if width < 1 {
 		return nil, errors.New("nttypeset: width must be positive")
 	}
-	return &Layout{e: e, doc: doc, width: width, y: Margin, numbers: opts.Numbers, chop: opts.Chop, fontGeneration: e.fontGeneration}, nil
+	l := &Layout{e: e, doc: doc, width: width, y: Margin, numbers: opts.Numbers, chop: opts.Chop, fontGeneration: e.fontGeneration}
+	if err := l.initSections(); err != nil {
+		return nil, err
+	}
+	return l, nil
 }
 
 // guard is deferred by every exported method that can lay out or raster,
@@ -274,6 +284,9 @@ func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 	para := l.para
 	l.para++
 	if len(s.text) == 0 {
+		if l.lineHeight > 0 {
+			return nil, l.lineHeight
+		}
 		return nil, size * 3 / 2
 	}
 	var wrapper shaping.LineWrapper
@@ -296,7 +309,11 @@ func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 			ascent = max(ascent, r.LineBounds.Ascent.Ceil())
 			descent = max(descent, (-r.LineBounds.Descent).Ceil())
 		}
-		height := max(size*3/2, ascent+descent)
+		leading := size * 3 / 2
+		if l.lineHeight > 0 {
+			leading = l.lineHeight
+		}
+		height := max(leading, ascent+descent)
 		baseline := y + (height-ascent-descent)/2 + ascent
 		advance := fixed.I(x)
 		for _, r := range runs {
@@ -402,11 +419,19 @@ func (l *Layout) block() {
 		}
 	}()
 	{
+		segments, left, right := l.openSections()
 		l.starts = append(l.starts, l.y)
 		b := &l.doc.Blocks[l.next]
 		l.next++
 		l.para = 0
-		x := Margin + b.Indent
+		x := Margin + b.Indent + left
+		l.lineHeight = 0
+		if b.Format != nil {
+			l.lineHeight = b.Format.LineHeight
+			l.y += b.Format.SpaceBefore + b.Format.Padding.Top
+			x += b.Format.Padding.Left
+			right += b.Format.Padding.Right
+		}
 		size := b.Size
 		if size == 0 {
 			size = 25
@@ -421,19 +446,27 @@ func (l *Layout) block() {
 			x += l.gutterWidth(size)
 			l.number(l.next, size)
 		}
-		width := max(32, l.width-Margin-x)
+		minimumWidth := 32
+		if left != 0 || right != 0 || b.Format != nil {
+			minimumWidth = 1
+		}
+		width := max(minimumWidth, l.width-Margin-x-right)
 		if l.chop && l.doc.Lines {
 			width = 1 << 24
 		}
+		boxX := x
 		switch b.Kind {
 		case KindRule:
 			l.rect(image.Rect(x, l.y, x+width, l.y+2), fillBorder)
-			l.y += 20
+			if b.Format != nil {
+				l.y += 2
+			}
+			l.y += blockGap(b, 20)
 		case KindImage:
 			if b.Image == nil || noStill(b.Image.Still) {
-				ops, h := l.text(b.Spans, 20, x, l.y, width)
+				ops, h := l.text(b.Spans, placeholderSize(b), x, l.y, width)
 				l.ops = append(l.ops, ops...)
-				l.y += h + 20
+				l.y += h + blockGap(b, 20)
 				break
 			}
 			im := b.Image
@@ -443,27 +476,40 @@ func (l *Layout) block() {
 			h := max(1, ih*w/iw)
 			x += im.Bounds.Offset(width, w)
 			l.ops = append(l.ops, operation{rect: image.Rect(x, l.y, x+w, l.y+h), asset: im.Still, destination: im.Key, animated: im.Animated, href: b.Href, block: l.next - 1})
-			l.y += h + 20
+			l.y += h + blockGap(b, 20)
 		case KindTable:
 			l.table(b, x, width)
 		default:
-			if b.Kind == KindHeading && l.next > 1 {
+			if b.Kind == KindHeading && l.next > 1 && b.Format == nil {
 				l.y += 16
 			}
 			inset := 0
-			if b.Kind == KindCode {
+			if b.Kind == KindCode && b.Format == nil {
 				inset = 16
 			}
 			ops, h := l.text(b.Spans, size, x+inset, l.y+inset, max(1, width-inset*2))
-			if b.Kind == KindCode {
+			if b.Kind == KindCode && b.Format == nil {
 				l.rect(image.Rect(x, l.y, x+width, l.y+h+32), fillCode)
 			}
 			l.ops = append(l.ops, ops...)
 			l.y += h + 2*inset
 			if b.Kind != KindLine {
-				l.y += 16
+				l.y += blockGap(b, 16)
 			}
 		}
+		if b.Format != nil {
+			l.y += b.Format.Padding.Bottom
+			if b.Kind == KindLine {
+				l.y += b.Format.SpaceAfter
+			}
+			if b.Format.Background.A != 0 {
+				content := append([]operation(nil), l.ops[ops:]...)
+				l.ops = l.ops[:ops]
+				l.solid(image.Rect(boxX-b.Format.Padding.Left, l.starts[len(l.starts)-1]+b.Format.SpaceBefore, boxX+width+b.Format.Padding.Right, l.y-b.Format.SpaceAfter), b.Format.Background)
+				l.ops = append(l.ops, content...)
+			}
+		}
+		l.closeSections(segments, ops)
 		// Border segments meet at block boundaries, including paragraph gaps.
 		// Only the final segment stops at the content's bottom. Appending per
 		// block preserves progressive layout and cancellation rollback.
@@ -476,7 +522,7 @@ func (l *Layout) block() {
 			if quote.Last {
 				bottom = contentBottom
 			}
-			x := Margin + quote.Indent - 18
+			x := Margin + left + quote.Indent - 18
 			l.rect(image.Rect(x, y, x+4, bottom), fillMuted)
 		}
 		if l.y+Margin > l.e.limits.Height || len(l.ops) > l.e.limits.Operations {
@@ -490,15 +536,18 @@ func (l *Layout) block() {
 			drawn = drawn.Union(op.rect)
 		}
 		l.bounds = append(l.bounds, drawn)
+		l.commitSections(segments)
 	}
 }
 
 func (l *Layout) table(b *Block, x, width int) {
 	if len(b.Rows) == 0 {
+		l.y += blockGap(b, 0)
 		return
 	}
 	cols := len(b.Rows[0])
 	if cols == 0 {
+		l.y += blockGap(b, 0)
 		return
 	}
 	weights := make([]int, cols)
@@ -508,7 +557,7 @@ func (l *Layout) table(b *Block, x, width int) {
 			if i >= cols {
 				break
 			}
-			s := l.e.shape(cell, 25)
+			s := l.e.shape(cell, tableSize(b))
 			advance := fixed.Int26_6(0)
 			for _, r := range s.runs {
 				advance += r.Advance
@@ -534,7 +583,7 @@ func (l *Layout) table(b *Block, x, width int) {
 			if i == cols-1 {
 				w = x + width - xx
 			}
-			cellOps, h := l.text(cell, 25, xx+12, l.y+10, max(1, w-24))
+			cellOps, h := l.text(cell, tableSize(b), xx+12, l.y+10, max(1, w-24))
 			ops = append(ops, cellOps...)
 			height = max(height, h+20)
 			xx += w
@@ -546,5 +595,5 @@ func (l *Layout) table(b *Block, x, width int) {
 		l.rect(image.Rect(x, l.y+height-1, x+width, l.y+height), fillBorder)
 		l.y += height
 	}
-	l.y += 20
+	l.y += blockGap(b, 20)
 }
