@@ -2,13 +2,14 @@
 
 ## Unreleased
 
-- The Hacker News demo adds 50–200% zoom with `+`/`=`, `-`, and `0`, plus browser action buttons.
+## v0.1.4 - 2026-10-26
 
-- The Hacker News reader runs in the browser site, with direct API fetching, retryable loading, and browser story/comment links.
-
-- Nested section backgrounds, padding, solid borders and spacing; resolved block formatting; source IDs with incremental anchor bounds and hit/selection identity lookup.
-
-- `examples/hackernews`, a live Hacker News front-page reader with HN-style typesetting, story and comment links, and terminal or PNG output.
+- `Document.Sections` adds nested backgrounds, padding, spacing, and independent solid borders, painted incrementally across viewports.
+- `Block.Format` supplies resolved line height, spacing, padding, and background. Nonzero `Block.Size` now also controls table text and missing-image placeholders; zero keeps their existing sizes.
+- Blocks and sections carry opaque `SourceID` values. `Layout.AnchorBounds` resolves laid or explicitly requested geometry, and `Layout.SourceAt` maps hit/selection positions to source identity across reflow.
+- The public model structs gained fields; use keyed literals. Nil formatting and absent sections preserve existing defaults. See [the supported styling subset and bridge contract](docs/sections.md).
+- `examples/hackernews` reads the live Hacker News front page in the terminal, as a PNG, or in the browser site, with story/comment links, direct API fetching, and retryable loading.
+- The Hacker News demo supports 50–200% zoom with `+`/`=`, `-`, and `0`, plus browser action buttons. Text reflows while the selected story stays visible.
 
 ## v0.1.3 - 2026-10-23
 
