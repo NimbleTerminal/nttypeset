@@ -26,21 +26,21 @@ go get nimbleterminal.dev/nttypeset nimbleterminal.dev/ntfonts
 
 ## SVG rendering dependencies
 
-go-text/render uses oksvg and rasterx to render SVG glyphs embedded in fonts.
-This repository pins our forks through `replace` directives in both Go modules:
+`nttypeset/raster` imports `github.com/NimbleMarkets/oksvg` (`v0.1.3`) directly
+and uses `rasterx` to rasterize glyph outlines and SVG glyphs embedded in fonts.
+This repository pins our `rasterx` fork through a `replace` directive in both Go
+modules:
 
 ```go
-replace github.com/srwiley/oksvg => github.com/NimbleMarkets/oksvg v0.1.3
 replace github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0
 ```
 
-Go does not inherit replacements from dependencies. To use the same forks in
-your application, add these directives to your application's `go.mod`, then run
-`go mod tidy`. Without them, consumers resolve the upstream modules. Imports
-keep their `github.com/srwiley/...` paths. The pinned releases require no sibling
-checkouts and apply to this repository's native and browser builds.
-The oksvg fork embeds Go font fallbacks for text inside SVGs; these do not
-supply the document's `FaceSource`.
+Go does not inherit replacements from dependencies. To use the same `rasterx`
+fork in your application, add this directive to your application's `go.mod`,
+then run `go mod tidy`. Without it, consumers resolve the upstream `rasterx`
+module. The pinned release requires no sibling checkouts and applies to this
+repository's native and browser builds. The `oksvg` module embeds Go font
+fallbacks for text inside SVGs; these do not supply the document's `FaceSource`.
 
 ## Quick start
 
@@ -154,10 +154,6 @@ raised, and exceeding one is a `*LimitError` that matches `ErrLimit`. The shaped
 run cache and the glyph-mask cache are each capped at 32 MiB, and no panic
 crosses the public API, including on corrupt font bytes.
 
-## License
-
-MIT; see [LICENSE](./LICENSE) and [NOTICE.md](./NOTICE.md).
-
 ## Styled sections and source IDs
 
 Nested `Document.Sections` preserve backgrounds, padding and solid borders
@@ -165,3 +161,21 @@ around block ranges. `Block.Format` supplies resolved spacing and line height;
 blocks and sections can carry opaque `SourceID` values. Use
 `Layout.AnchorBounds` for navigation and `Layout.SourceAt` for hit/selection
 identity. See [the bridge contract and before/after example](docs/sections.md).
+
+## Acknowledgements
+
+We are very thankful to the [`go-text`](https://github.com/go-text) authors for
+[`go-text/typesetting`](https://github.com/go-text/typesetting) and
+[`go-text/render`](https://github.com/go-text/render) (from which
+`nttypeset/raster`'s shaped-run outline, bitmap, and SVG glyph rendering is
+adapted), to Steven R. Wiley for [`oksvg`](https://github.com/srwiley/oksvg)
+and [`rasterx`](https://github.com/srwiley/rasterx), and to
+[Chroma](https://github.com/alecthomas/chroma),
+[Goldmark](https://github.com/yuin/goldmark),
+[Charm](https://charm.land), [Kitty](https://sw.kovidgoyal.net/kitty/), and
+[Ghostty](https://ghostty.org).
+
+## License
+
+MIT; see [LICENSE](./LICENSE), [NOTICE.md](./NOTICE.md), and
+[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

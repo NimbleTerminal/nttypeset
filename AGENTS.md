@@ -66,20 +66,21 @@ Tea fork for js/wasm builds only; native builds use the upstream Bubble Tea.
 Never add sibling `replace` directives: ntfonts and ntpicture are pinned by
 version.
 
-SVG glyph rendering through go-text/render uses versioned replacements:
-`github.com/srwiley/oksvg => github.com/NimbleMarkets/oksvg v0.1.3` and
+Glyph outline and SVG glyph rendering in `raster` (adapted from
+`go-text/render` v0.2.1) imports `github.com/NimbleMarkets/oksvg v0.1.3`
+directly and uses a versioned replacement for `rasterx`:
 `github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0`.
-Keep these identical in root and examples `go.mod`; dependency replacements
-are not inherited. The browser workspace uses these module replacements too.
-Keep upstream import paths and use published versions, never sibling paths.
-Consumers must add the replacements to their own main module to select the
-forks; keep the README instructions current when changing pins.
+Keep this replacement identical in root and examples `go.mod`; dependency
+replacements are not inherited. The browser workspace uses this module
+replacement too. Use published versions, never sibling paths. Consumers that
+want the `rasterx` fork add the replacement to their own main module; keep the
+README instructions current when changing pins.
 
-Dependencies: go-text typesetting v0.3.5 and render v0.2.1, chroma v2.27.0, and
-x/image v0.47.0. goldmark v1.8.6 and goldmark-emoji v1.0.6 are allowed only in
-the `goldmark` subpackage. The library never imports ntpicture, Bubble Tea,
-ntfonts, or gloss; the examples module imports all but gloss, and adds booba
-(go-booba) and bubbles for the browser build.
+Dependencies: go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.3, rasterx,
+chroma v2.27.0, and x/image v0.47.0. goldmark v1.8.6 and goldmark-emoji v1.0.6
+are allowed only in the `goldmark` subpackage. The library never imports
+ntpicture, Bubble Tea, ntfonts, or gloss; the examples module imports all but
+gloss, and adds booba (go-booba) and bubbles for the browser build.
 
 Generated output is ignored: `bin/`, `dist/`, `.task/`, and the site's build
 output under `web/`.
@@ -149,8 +150,9 @@ Breaking these breaks consumers, even if tests still pass.
 - **Generated site assets are never committed.** `web/demos`, `web/booba`,
   `web/ghostty-web` and the copied files are build output.
 - **The display list is private.** It is not exported API.
-- **The core imports only go-text, chroma and x/image** (plus the standard
-  library). goldmark belongs to the `goldmark` subpackage alone.
+- **The core imports only go-text/typesetting, NimbleMarkets/oksvg, rasterx,
+  chroma and x/image** (plus the standard library). goldmark belongs to the
+  `goldmark` subpackage alone.
 - **No concurrent use.** An `Engine` or `Layout` is not safe for concurrent use;
   the caller serializes access.
 

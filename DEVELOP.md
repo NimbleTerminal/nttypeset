@@ -55,18 +55,23 @@ output needs that check before release.
 
 ## Dependencies
 
-The core depends on go-text typesetting v0.3.5 and render v0.2.1,
-chroma v2.27.0, and x/image v0.47.0. goldmark appears only in the `goldmark`
-subpackage. It never depends on ntpicture, Bubble Tea, ntfonts, or gloss. Programs
-that want the embedded faces import ntfonts themselves and pass `ntfonts.Embedded`
-to `WithFonts`. The examples module pins ntfonts, ntpicture, Bubble Tea, bubbles
-and go-booba. The notices cover the library, the demos and the browser runtime
+The core depends on go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.3,
+rasterx, chroma v2.27.0, and x/image v0.47.0 (with shaped-run outline, bitmap,
+and SVG glyph rendering in `raster` adapted from `go-text/render` v0.2.1).
+goldmark appears only in the `goldmark` subpackage. It never depends on
+ntpicture, Bubble Tea, ntfonts, or gloss. Programs that want the embedded faces
+import ntfonts themselves and pass `ntfonts.Embedded` to `WithFonts`. The
+examples module pins ntfonts, ntpicture, Bubble Tea, bubbles and go-booba. The
+notices cover the library, adapted code, the demos and the browser runtime
 (booba, ghostty-web and pako), since the site distributes them.
 
-SVG glyph rendering uses the oksvg and rasterx forks
-through matching versioned replacements in both `go.mod` files; see the
-[consumer setup](README.md#svg-rendering-dependencies). Keep both pins in sync
-and validate native and browser builds with `task ci` after updating them.
+Glyph and SVG rendering imports `github.com/NimbleMarkets/oksvg` v0.1.3
+directly and pins the `rasterx` fork (`github.com/srwiley/rasterx =>
+github.com/neomantra/rasterx v0.1.0`) through matching versioned replacements
+in both `go.mod` files; see the
+[consumer setup](README.md#svg-rendering-dependencies). Keep both `go.mod`
+files in sync and validate native and browser builds with `task ci` after
+updating them.
 
 Run `task notices` after dependency updates, then review and commit
 THIRD_PARTY_NOTICES.md. The generator unions the packages linked on linux,
