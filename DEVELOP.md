@@ -117,10 +117,12 @@ not listed on the browser's buttons, though the demo still answers them. The
 Node smoke script resizes the terminal to 100 columns and waits for Quit.
 
 `.github/workflows/pages.yml` deploys `web/` to GitHub Pages on each push to
-`main` and on manual runs. It runs `task ci` first and uploads the site only if
-every check passes. It does not run on other branches. After the first merge the
-maintainer enables Pages on the repository once, with the source set to GitHub
-Actions.
+`main`, on release tag pushes matching `v*`, and on manual runs. It runs
+`task ci` on the triggering revision first and uploads the site only if every
+check passes. Other branch pushes do not trigger deployment. The `github-pages`
+environment must allow deployments from `main` and release tags. After the first
+merge the maintainer enables Pages on the repository once, with the source set
+to GitHub Actions.
 
 The Node smoke script runs the wasm and checks its output; it is not a visual check.
 Hacker News uses mocked Fetch responses in the smoke check, including an API

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy GitHub Pages on release tag pushes matching `v*`, as well as pushes to `main`.
+
 ## v0.1.5 - 2026-10-28
 
 - Pin SVG glyph rendering to the oksvg v0.1.3 and rasterx v0.1.0 forks through module replacements; document how consumers enable the same forks.
