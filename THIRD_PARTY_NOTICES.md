@@ -64,7 +64,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## charm.land/bubbletea/v2 v2.1.0
+## charm.land/bubbletea/v2 v2.1.1
 
 ```
 MIT License
@@ -116,7 +116,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/NimbleMarkets/go-booba v0.10.2
+## github.com/NimbleMarkets/go-booba v0.10.5
 
 ```
 MIT License
@@ -299,7 +299,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/charmbracelet/ultraviolet v0.0.0-20261008173134-6b8d4baf91b4
+## github.com/charmbracelet/ultraviolet v0.0.0-20261023060817-a45b7c86333f
 
 ```
 MIT License
@@ -481,7 +481,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/dlclark/regexp2/v2 v2.2.1
+## github.com/dlclark/regexp2/v2 v2.11.0
 
 ```
 The MIT License (MIT)
@@ -837,7 +837,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/yuin/goldmark-emoji v1.0.5
+## github.com/yuin/goldmark-emoji v1.0.6
 
 ```
 MIT License
@@ -863,7 +863,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/yuin/goldmark v1.8.2
+## github.com/yuin/goldmark v1.8.6
 
 ```
 MIT License
@@ -921,7 +921,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## golang.org/x/net v0.61.0
+## golang.org/x/net v0.62.0
 
 ```
 Copyright 2009 The Go Authors.
@@ -1097,7 +1097,7 @@ The Go reference fonts (`Go-*.ttf`, `GoMono-*.ttf`) are unused and carry their
 own license in `LICENSE.gofont`.
 ```
 
-## nimbleterminal.dev/ntpicture v0.1.0
+## nimbleterminal.dev/ntpicture v0.1.2
 
 ```
 MIT License

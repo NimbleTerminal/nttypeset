@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Update the browser runtime to go-booba v0.10.5, and refresh Go dependencies including Bubble Tea, ntpicture, Goldmark, and goldmark-emoji.
+
 ## v0.1.4 - 2026-10-26
 
 - `Document.Sections` adds nested backgrounds, padding, spacing, and independent solid borders, painted incrementally across viewports.

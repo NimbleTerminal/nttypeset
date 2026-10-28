@@ -66,7 +66,7 @@ Never add sibling `replace` directives: ntfonts and ntpicture are pinned by
 version.
 
 Dependencies: go-text typesetting v0.3.5 and render v0.2.1, chroma v2.27.0, and
-x/image v0.47.0. goldmark v1.8.2 and goldmark-emoji v1.0.5 are allowed only in
+x/image v0.47.0. goldmark v1.8.6 and goldmark-emoji v1.0.6 are allowed only in
 the `goldmark` subpackage. The library never imports ntpicture, Bubble Tea,
 ntfonts, or gloss; the examples module imports all but gloss, and adds booba
 (go-booba) and bubbles for the browser build.
