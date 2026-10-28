@@ -44,4 +44,9 @@ require (
 
 replace nimbleterminal.dev/nttypeset => ..
 
+// Dependency replacements are not inherited from the parent module.
+replace github.com/srwiley/oksvg => github.com/NimbleMarkets/oksvg v0.1.3
+
+replace github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0
+
 tool github.com/NimbleMarkets/go-booba/cmd/booba-assets

@@ -16,9 +16,10 @@ What it is not:
 - It does no terminal output. ntpicture shows the images it produces.
 - The core does no Markdown parsing. The `goldmark` adapter subpackage takes a
   parsed tree.
-- It carries no fonts. Faces come from a `FaceSource`; the separate module
+- Document faces come from a `FaceSource`; the separate module
   `nimbleterminal.dev/ntfonts` supplies embedded OFL subsets as
-  `ntfonts.Embedded`.
+  `ntfonts.Embedded`. The oksvg fork embeds Go font fallbacks for text inside
+  SVGs only; these do not supply the document's faces.
 
 Longer-form docs: `README.md` (overview), `DEVELOP.md` (tooling and releases),
 `CHANGELOG.md`. Pixel parity with gloss is checked in gloss.
@@ -64,6 +65,15 @@ The browser build uses `wasm.work`, a workspace that swaps in a browser Bubble
 Tea fork for js/wasm builds only; native builds use the upstream Bubble Tea.
 Never add sibling `replace` directives: ntfonts and ntpicture are pinned by
 version.
+
+SVG glyph rendering through go-text/render uses versioned replacements:
+`github.com/srwiley/oksvg => github.com/NimbleMarkets/oksvg v0.1.3` and
+`github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0`.
+Keep these identical in root and examples `go.mod`; dependency replacements
+are not inherited. The browser workspace uses these module replacements too.
+Keep upstream import paths and use published versions, never sibling paths.
+Consumers must add the replacements to their own main module to select the
+forks; keep the README instructions current when changing pins.
 
 Dependencies: go-text typesetting v0.3.5 and render v0.2.1, chroma v2.27.0, and
 x/image v0.47.0. goldmark v1.8.6 and goldmark-emoji v1.0.6 are allowed only in

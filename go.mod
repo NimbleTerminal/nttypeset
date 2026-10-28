@@ -2,6 +2,11 @@ module nimbleterminal.dev/nttypeset
 
 go 1.26.0
 
+// SVG glyph rendering forks; keep these replacements in sync with examples/go.mod.
+replace github.com/srwiley/oksvg => github.com/NimbleMarkets/oksvg v0.1.3
+
+replace github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0
+
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/go-text/render v0.2.1

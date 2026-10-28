@@ -63,6 +63,11 @@ to `WithFonts`. The examples module pins ntfonts, ntpicture, Bubble Tea, bubbles
 and go-booba. The notices cover the library, the demos and the browser runtime
 (booba, ghostty-web and pako), since the site distributes them.
 
+SVG glyph rendering uses the oksvg and rasterx forks
+through matching versioned replacements in both `go.mod` files; see the
+[consumer setup](README.md#svg-rendering-dependencies). Keep both pins in sync
+and validate native and browser builds with `task ci` after updating them.
+
 Run `task notices` after dependency updates, then review and commit
 THIRD_PARTY_NOTICES.md. The generator unions the packages linked on linux,
 darwin and windows (amd64 and arm64) and js/wasm, so its output is the same on

@@ -16,13 +16,31 @@ It was extracted from the `--typeset` view of
 It draws images and nothing else. It writes nothing to a terminal; show its
 output with [ntpicture](https://nimbleterminal.dev/ntpicture). The core does not
 parse Markdown: the `nttypeset/goldmark` subpackage takes an already parsed
-goldmark tree. It ships no fonts either: faces come from a `FaceSource`, and the
+goldmark tree. Document text faces come from a `FaceSource`, and the
 separate module `nimbleterminal.dev/ntfonts` supplies seven embedded OFL families
 as `ntfonts.Embedded`.
 
 ```sh
 go get nimbleterminal.dev/nttypeset nimbleterminal.dev/ntfonts
 ```
+
+## SVG rendering dependencies
+
+go-text/render uses oksvg and rasterx to render SVG glyphs embedded in fonts.
+This repository pins our forks through `replace` directives in both Go modules:
+
+```go
+replace github.com/srwiley/oksvg => github.com/NimbleMarkets/oksvg v0.1.3
+replace github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0
+```
+
+Go does not inherit replacements from dependencies. To use the same forks in
+your application, add these directives to your application's `go.mod`, then run
+`go mod tidy`. Without them, consumers resolve the upstream modules. Imports
+keep their `github.com/srwiley/...` paths. The pinned releases require no sibling
+checkouts and apply to this repository's native and browser builds.
+The oksvg fork embeds Go font fallbacks for text inside SVGs; these do not
+supply the document's `FaceSource`.
 
 ## Quick start
 

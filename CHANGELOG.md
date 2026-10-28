@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Pin SVG glyph rendering to the oksvg v0.1.3 and rasterx v0.1.0 forks through module replacements; document how consumers enable the same forks.
 - Update the browser runtime to go-booba v0.10.5, and refresh Go dependencies including Bubble Tea, ntpicture, Goldmark, and goldmark-emoji.
 
 ## v0.1.4 - 2026-10-26
