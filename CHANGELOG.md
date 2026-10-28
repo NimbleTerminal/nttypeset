@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.6 - 2026-10-28
+
 - Inline shaped-run outline, bitmap, and SVG glyph rendering into `nttypeset/raster` (adapted from `github.com/go-text/render` v0.2.1) and remove the `github.com/go-text/render` dependency.
 - Import `github.com/NimbleMarkets/oksvg` v0.1.3 directly instead of replacing `github.com/srwiley/oksvg`.
 - Deploy GitHub Pages on release tag pushes matching `v*`, as well as pushes to `main`.
