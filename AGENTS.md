@@ -67,7 +67,7 @@ Never add sibling `replace` directives: ntfonts and ntpicture are pinned by
 version.
 
 Glyph outline and SVG glyph rendering in `raster` (adapted from
-`go-text/render` v0.2.1) imports `github.com/NimbleMarkets/oksvg v0.1.3`
+`go-text/render` v0.2.1) imports `github.com/NimbleMarkets/oksvg v0.1.4`
 directly and uses a versioned replacement for `rasterx`:
 `github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0`.
 Keep this replacement identical in root and examples `go.mod`; dependency
@@ -76,8 +76,8 @@ replacement too. Use published versions, never sibling paths. Consumers that
 want the `rasterx` fork add the replacement to their own main module; keep the
 README instructions current when changing pins.
 
-Dependencies: go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.3, rasterx,
-chroma v2.27.0, and x/image v0.47.0. goldmark v1.8.6 and goldmark-emoji v1.0.6
+Dependencies: go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.4, rasterx,
+chroma v2.27.0, and x/image v0.47.0. goldmark v1.8.7 and goldmark-emoji v1.0.6
 are allowed only in the `goldmark` subpackage. The library never imports
 ntpicture, Bubble Tea, ntfonts, or gloss; the examples module imports all but
 gloss, and adds booba (go-booba) and bubbles for the browser build.

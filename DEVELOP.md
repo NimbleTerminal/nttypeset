@@ -55,7 +55,7 @@ output needs that check before release.
 
 ## Dependencies
 
-The core depends on go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.3,
+The core depends on go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.4,
 rasterx, chroma v2.27.0, and x/image v0.47.0 (with shaped-run outline, bitmap,
 and SVG glyph rendering in `raster` adapted from `go-text/render` v0.2.1).
 goldmark appears only in the `goldmark` subpackage. It never depends on
@@ -65,7 +65,7 @@ examples module pins ntfonts, ntpicture, Bubble Tea, bubbles and go-booba. The
 notices cover the library, adapted code, the demos and the browser runtime
 (booba, ghostty-web and pako), since the site distributes them.
 
-Glyph and SVG rendering imports `github.com/NimbleMarkets/oksvg` v0.1.3
+Glyph and SVG rendering imports `github.com/NimbleMarkets/oksvg` v0.1.4
 directly and pins the `rasterx` fork (`github.com/srwiley/rasterx =>
 github.com/neomantra/rasterx v0.1.0`) through matching versioned replacements
 in both `go.mod` files; see the

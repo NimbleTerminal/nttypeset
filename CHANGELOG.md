@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.1.7 - 2026-10-30
+
+- Update oksvg to v0.1.4, Goldmark to v1.8.7, and regexp2 to v2.12.0; refresh demo dependencies to ntfonts v0.2.0, ntpicture v0.1.4, go-booba v0.10.7, and terminfo v1.3.0.
+
 ## v0.1.6 - 2026-10-28
 
 - Inline shaped-run outline, bitmap, and SVG glyph rendering into `nttypeset/raster` (adapted from `github.com/go-text/render` v0.2.1) and remove the `github.com/go-text/render` dependency.

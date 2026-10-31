@@ -26,7 +26,7 @@ go get nimbleterminal.dev/nttypeset nimbleterminal.dev/ntfonts
 
 ## SVG rendering dependencies
 
-`nttypeset/raster` imports `github.com/NimbleMarkets/oksvg` (`v0.1.3`) directly
+`nttypeset/raster` imports `github.com/NimbleMarkets/oksvg` (`v0.1.4`) directly
 and uses `rasterx` to rasterize glyph outlines and SVG glyphs embedded in fonts.
 This repository pins our `rasterx` fork through a `replace` directive in both Go
 modules:

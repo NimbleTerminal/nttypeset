@@ -179,7 +179,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/NimbleMarkets/go-booba v0.10.5
+## github.com/NimbleMarkets/go-booba v0.10.7
 
 ```
 MIT License
@@ -213,7 +213,7 @@ The following files are under their respective licenses:
   * ./etc/booba.png remains **All Rights Reserved** by Neomantra Corp.  You may use it only in unmodified form and only as part of this project (e.g., in forks or distributions of the project).  You may **not** extract it for unrelated use, modify it, or redistribute it separately without explicit permission.
 ```
 
-## github.com/NimbleMarkets/oksvg v0.1.3
+## github.com/NimbleMarkets/oksvg v0.1.4
 
 ```
 BSD 3-Clause License
@@ -579,7 +579,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/dlclark/regexp2/v2 v2.11.0
+## github.com/dlclark/regexp2/v2 v2.12.0
 
 ```
 The MIT License (MIT)
@@ -815,7 +815,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/xo/terminfo v1.2.0
+## github.com/xo/terminfo v1.3.0
 
 ```
 The MIT License (MIT)
@@ -867,7 +867,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/yuin/goldmark v1.8.6
+## github.com/yuin/goldmark v1.8.7
 
 ```
 MIT License
@@ -1053,7 +1053,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## nimbleterminal.dev/ntfonts v0.1.0
+## nimbleterminal.dev/ntfonts v0.2.0
 
 ```
 MIT License
@@ -1085,7 +1085,7 @@ Source code is MIT licensed; see LICENSE.
 
 The embedded font subsets are licensed under the SIL Open Font License 1.1, not
 MIT. They are derived from the upstream fonts below and renamed internally to
-Gloss Text A through G (the Reserved Font Names are not used). Each family's full
+Gloss Text A through G and Gloss Text Symbols (the Reserved Font Names are not used). Each family's full
 license is in `<family>.OFL.txt` and in THIRD_PARTY_NOTICES.md, generated with
 `task notices`. Pinned sources, URLs and hashes are in `sources.json`.
 
@@ -1097,11 +1097,17 @@ license is in `<family>.OFL.txt` and in THIRD_PARTY_NOTICES.md, generated with
 - IBM Plex Mono: https://github.com/google/fonts/tree/bd8f81ddb5c74d5c8897b36ad88b440266245103/ofl/ibmplexmono
 - JetBrains Mono: https://github.com/google/fonts/tree/bd8f81ddb5c74d5c8897b36ad88b440266245103/ofl/jetbrainsmono
 
+The symbol fallback combines Noto Sans Symbols 2 with missing arrows/math from
+Noto Sans Math, both pinned to the Google Fonts commit above. Their licenses
+are `notosanssymbols2.OFL.txt` and `notosansmath.OFL.txt`; `Licenses()` includes
+both texts in the fallback entry. The separate `cjk/` module ships its own OFL
+and generated notices for Noto Sans CJK SC.
+
 The Go reference fonts (`Go-*.ttf`, `GoMono-*.ttf`) are unused and carry their
 own license in `LICENSE.gofont`.
 ```
 
-## nimbleterminal.dev/ntpicture v0.1.2
+## nimbleterminal.dev/ntpicture v0.1.4
 
 ```
 MIT License
