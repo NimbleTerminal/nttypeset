@@ -41,13 +41,22 @@ func (s Style) Variant() string {
 // uses strings only, so a font package implements it without importing
 // nttypeset.
 //
-// The engine asks only for the families of the built-in looks: Literata,
+// The engine asks for the families of the built-in looks: Literata,
 // Newsreader, IBM Plex Sans, Source Serif 4, Iosevka, IBM Plex Mono and
 // JetBrains Mono, each in the four variants. Literata and Iosevka are also the
 // glyph fallback. A source serves its own faces under these names; any family
-// it does not supply makes the looks that use it fail to load.
+// it does not supply makes the looks that use it fail to load. Sources may
+// additionally implement FallbackSource to supply more glyph-fallback families.
 type FaceSource interface {
 	Face(family, variant string) ([]byte, error)
+}
+
+// FallbackSource optionally lists additional glyph-fallback families in preference
+// order. A FaceSource implementing it is queried when loading a look. Each family
+// is tried after Literata (body) or Iosevka (mono), in the run's variant. Families
+// that cannot load are skipped and remembered until the look changes.
+type FallbackSource interface {
+	Fallbacks() []string
 }
 
 // FontLook pairs a body family with a code family, by name. The family names
@@ -158,9 +167,28 @@ type faces struct {
 	faces          [8]*font.Face
 	fallback       [8]*font.Face
 	fallbackFailed [8]bool
+	extra          []fallbackFamily
 	missing        map[rune]bool
 	fallbackUsed   map[string]bool
 	src            FaceSource
+}
+
+// fallbackFamily caches each extra family's faces, including failed loads.
+// Mono and body styles have separate slots, just like the built-in fallback.
+type fallbackFamily struct {
+	name   string
+	faces  [8]*font.Face
+	failed [8]bool
+}
+
+// sourceFallbacks also contains panics from optional source implementations.
+func sourceFallbacks(src FallbackSource) (names []string, err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			names, err = nil, fmt.Errorf("font fallbacks: %v", p)
+		}
+	}()
+	return src.Fallbacks(), nil
 }
 
 // newFaces loads a look's faces from src with empty fallback state.
@@ -169,8 +197,23 @@ func newFaces(src FaceSource, look FontLook) (*faces, error) {
 	if err != nil {
 		return nil, err
 	}
+	var extra []fallbackFamily
+	if provider, ok := src.(FallbackSource); ok {
+		names, err := sourceFallbacks(provider)
+		if err != nil {
+			return nil, err
+		}
+		seen := map[string]bool{}
+		for _, name := range names {
+			if !seen[name] {
+				extra = append(extra, fallbackFamily{name: name})
+				seen[name] = true
+			}
+		}
+	}
 	return &faces{
 		faces:        loaded,
+		extra:        extra,
 		missing:      map[rune]bool{},
 		fallbackUsed: map[string]bool{},
 		src:          src,
@@ -178,7 +221,7 @@ func newFaces(src FaceSource, look FontLook) (*faces, error) {
 }
 
 // fallbackMap resolves runes for one style, falling back to Literata or
-// Iosevka when the primary face lacks the rune. It implements shaping.Fontmap.
+// Iosevka, then the source's extra families. It implements shaping.Fontmap.
 type fallbackMap struct {
 	f     *faces
 	style Style
@@ -187,8 +230,8 @@ type fallbackMap struct {
 var _ shaping.Fontmap = fallbackMap{}
 
 // ResolveFace returns the face to shape r with. A fallback family the source
-// cannot supply is remembered per style; the rune then counts as missing and
-// the primary face is returned.
+// cannot supply is remembered per style. Only when the entire chain fails does
+// the rune count as missing and resolve to the primary face.
 func (m fallbackMap) ResolveFace(r rune) *font.Face {
 	i := int(m.style & 7)
 	f := m.f
@@ -215,6 +258,23 @@ func (m fallbackMap) ResolveFace(r rune) *font.Face {
 		if _, ok := fb.NominalGlyph(r); ok {
 			f.fallbackUsed[family] = true
 			return fb
+		}
+	}
+	for j := range f.extra {
+		extra := &f.extra[j]
+		if extra.faces[i] == nil && !extra.failed[i] {
+			face, err := loadFace(f.src, extra.name, Style(i).Variant())
+			if err != nil {
+				extra.failed[i] = true
+			} else {
+				extra.faces[i] = face
+			}
+		}
+		if fb := extra.faces[i]; fb != nil {
+			if _, ok := fb.NominalGlyph(r); ok {
+				f.fallbackUsed[extra.name] = true
+				return fb
+			}
 		}
 	}
 	if len(f.missing) < maxMissing {

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.1.8 - 2026-10-31
+
+- Try optional `FallbackSource` families after Literata or Iosevka, cache loads
+  and failures per style, and include used families in `Engine.Fallbacks()`.
+
 ## v0.1.7 - 2026-10-30
 
 - Update oksvg to v0.1.4, Goldmark to v1.8.7, and regexp2 to v2.12.0; refresh demo dependencies to ntfonts v0.2.0, ntpicture v0.1.4, go-booba v0.10.7, and terminfo v1.3.0.

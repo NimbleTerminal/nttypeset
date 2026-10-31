@@ -67,6 +67,15 @@ Literata, Newsreader, IBM Plex Sans, Source Serif 4, Iosevka, IBM Plex Mono and
 JetBrains Mono. Any FaceSource that serves these family names works; to use
 other fonts, serve them under these names. Custom looks are not supported yet.
 
+For a missing glyph, the engine tries Literata for body text or Iosevka for
+mono text, then any families returned by the source's optional
+`Fallbacks() []string` method (`FallbackSource`), in order. Each is requested in
+the run's variant; unavailable families are skipped and cached. `Engine.Fallbacks()`
+reports families actually used, and `Missing()` reports only runes absent from
+the whole chain. With ntfonts' source method, this enables its Noto Sans Symbols 2
+face for symbols such as ✓ ✗ ⇒ ↔ ●. Mono runs keep Iosevka wherever it has the
+glyph; only its missing glyphs fall through to a potentially proportional face.
+
 `img` is an `*image.RGBA` of 400x100 pixels. The runnable form, with test fonts
 standing in for `ntfonts.Embedded`, is `ExampleLines` in `example_test.go`.
 Handle the errors; they are dropped here for brevity.

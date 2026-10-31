@@ -122,7 +122,8 @@ func (e *Engine) Look() FontLook { return e.look }
 // and override that selected it.
 func (e *Engine) FontKey() string { return e.fontKey }
 
-// Fallbacks returns the fallback families used so far, sorted.
+// Fallbacks returns the built-in and source-provided fallback families used
+// so far, sorted.
 func (e *Engine) Fallbacks() []string {
 	if e.faces == nil {
 		return nil
@@ -135,9 +136,8 @@ func (e *Engine) Fallbacks() []string {
 	return names
 }
 
-// Missing returns up to 32 runes that no face of the current look has a glyph
-// for, sorted. A fallback family the font source cannot supply leaves its
-// runes here.
+// Missing returns up to 32 runes that neither the current look nor any face
+// in its fallback chain has a glyph for, sorted.
 func (e *Engine) Missing() []rune {
 	if e.faces == nil {
 		return nil
