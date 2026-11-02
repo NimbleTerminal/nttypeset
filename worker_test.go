@@ -25,6 +25,10 @@ func (workerTestFontSource) Face(family, variant string) ([]byte, error) {
 }
 
 func init() {
+	if len(os.Args) == 3 && os.Args[1] == ntmediabox.StageArg {
+		_ = ntmediabox.RunStage(os.Args[1:])
+		os.Exit(9)
+	}
 	if len(os.Args) >= 2 && os.Args[1] == "--nttypeset-test-worker" {
 		conn := os.NewFile(3, "media")
 		if conn == nil {
@@ -94,6 +98,7 @@ func TestRasterWorkerSandboxedSubprocess(t *testing.T) {
 	}, WorkerConfig{
 		WorkerPath:       exe,
 		WorkerArgs:       []string{"--nttypeset-test-worker"},
+		StagePath:        exe,
 		AllowUnsandboxed: true,
 		Timeout:          5 * time.Second,
 	})
