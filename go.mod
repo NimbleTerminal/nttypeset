@@ -1,9 +1,11 @@
 module nimbleterminal.dev/nttypeset
 
-go 1.26.0
+go 1.26.8
 
 // SVG glyph rendering fork; keep this replacement in sync with examples/go.mod.
 replace github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0
+
+replace nimbleterminal.dev/ntmediabox => ../ntmediabox
 
 require (
 	github.com/NimbleMarkets/oksvg v0.1.4
@@ -13,6 +15,7 @@ require (
 	github.com/yuin/goldmark v1.8.7
 	github.com/yuin/goldmark-emoji v1.0.6
 	golang.org/x/image v0.47.0
+	nimbleterminal.dev/ntmediabox v0.0.0
 )
 
 require (
