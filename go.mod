@@ -7,6 +7,8 @@ replace github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0
 
 replace nimbleterminal.dev/ntmediabox => ../ntmediabox
 
+replace nimbleterminal.dev/ntmediabox/pkg/mediabox => ../ntmediabox/pkg/mediabox
+
 require (
 	github.com/NimbleMarkets/oksvg v0.1.4
 	github.com/alecthomas/chroma/v2 v2.27.0
@@ -23,4 +25,5 @@ require (
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
+	nimbleterminal.dev/ntmediabox/pkg/mediabox v0.0.0 // indirect
 )
