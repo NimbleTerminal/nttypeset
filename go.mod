@@ -25,5 +25,11 @@ require (
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
+	nimbleterminal.dev/ntconfine v0.1.0 // indirect
+	nimbleterminal.dev/ntconfine/pkg/confine v0.1.0 // indirect
 	nimbleterminal.dev/ntmediabox/pkg/mediabox v0.1.0 // indirect
 )
+
+replace nimbleterminal.dev/ntconfine => ../ntconfine
+
+replace nimbleterminal.dev/ntconfine/pkg/confine => ../ntconfine/pkg/confine
