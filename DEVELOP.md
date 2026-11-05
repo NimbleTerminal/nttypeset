@@ -49,6 +49,11 @@ format, tidy, verify, race tests, bounded fuzzing, vet, lint, Windows and wasm b
 check, vulncheck, then the browser site build and its Node checks, the js/wasm
 tests and the browser vulnerability scan.
 
+The confined subprocess test builds a separate `CGO_ENABLED=0` test helper on
+Linux. A cgo/race-enabled binary cannot apply the stage's all-thread Landlock
+restrictions, and the race runtime's address-space requirements do not fit the
+worker budget. The parent and in-memory worker tests retain race coverage.
+
 `task fuzz` mutates worker view arithmetic, untrusted JSON metadata, and actual
 in-memory worker render round trips. CI runs each target for 10 seconds with two
 fuzz workers. For a longer local campaign, run

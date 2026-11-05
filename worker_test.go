@@ -8,6 +8,8 @@ import (
 	"math"
 	"net"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -98,6 +100,20 @@ func TestRasterWorkerSandboxedSubprocess(t *testing.T) {
 	exe, err := os.Executable()
 	if err != nil {
 		t.Fatalf("os.Executable: %v", err)
+	}
+	if runtime.GOOS == "linux" {
+		// The Linux stage uses AllThreadsSyscall, which rejects cgo-linked
+		// binaries. In particular the race-enabled test executable cannot be
+		// its own stage. Build a pure-Go helper for both staging and rendering;
+		// race runtimes also need more address space than the worker policy.
+		exe = filepath.Join(t.TempDir(), "nttypeset-test-worker")
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, "go", "test", "-mod=readonly", "-c", "-o", exe, ".")
+		cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "GOFLAGS=", "GOWORK=off")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("build pure-Go confinement helper: %v\n%s", err, out)
+		}
 	}
 
 	res, err := RasterWorker(context.Background(), WorkerRequest{

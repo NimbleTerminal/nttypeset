@@ -150,8 +150,11 @@ used in-process. `Engine` and `Layout` require serialized access.
 The worker tests cover a real subprocess with `AllowUnsandboxed` disabled when
 OS confinement is available, request rejection before document building,
 invalid application metadata, and timeout-triggered kill hooks. The real
-subprocess test skips when confinement is unavailable; a passing in-memory test
-does not prove kernel enforcement. Linux stage behavior and denial of file,
+subprocess test builds a separate `CGO_ENABLED=0` helper on Linux: its stage
+requires `AllThreadsSyscall`, which rejects cgo-linked binaries, including
+race-enabled test binaries. The parent and in-memory tests still run under the
+race detector. The subprocess test skips when confinement is unavailable; a
+passing in-memory test does not prove kernel enforcement. Linux stage behavior and denial of file,
 network and terminal access need deployment testing on the target kernel.
 Upstream ntconfine and ntmediabox carry their own confinement and hostile-wire
 tests; nttypeset does not duplicate their full suites.

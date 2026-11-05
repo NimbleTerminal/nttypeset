@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Build a pure-Go confinement helper for Linux tests so race-enabled CI can exercise the sandbox without relaxing its policy.
+
 - Add worker view, metadata and render round-trip fuzz targets, with bounded mutation campaigns in CI.
 - Split Unicode paragraph separators before shaping and wrapping, fixing a recovered panic on control-character input found by fuzzing.
 
