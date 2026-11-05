@@ -38,6 +38,14 @@ tasks:
   test-race:
     desc: Run tests with the race detector
     cmds: ['go test -mod=readonly -race ./...', 'go -C examples test -mod=readonly -race ./...']
+  fuzz:
+    desc: Fuzz worker views, metadata and render round trips (10s each by default)
+    vars:
+      FUZZ_TIME: '{{.FUZZ_TIME | default "10s"}}'
+      FUZZ_PARALLEL: '{{.FUZZ_PARALLEL | default "2"}}'
+    cmds:
+      - for: [FuzzWorkerView, FuzzWorkerMetadata, FuzzWorkerRoundTrip]
+        cmd: go test -mod=readonly -run='^$' -fuzz='^{{.ITEM}}$' -fuzztime={{.FUZZ_TIME}} -parallel={{.FUZZ_PARALLEL}} .
   vet:
     desc: Run Go vet
     cmds: ['go vet -mod=readonly ./...', 'go -C examples vet -mod=readonly ./...']
@@ -186,6 +194,7 @@ tasks:
       - task: go-tidy-check
       - task: go-verify
       - task: test-race
+      - task: fuzz
       - task: vet
       - task: lint
       - task: cross-windows

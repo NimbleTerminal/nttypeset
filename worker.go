@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"math"
 	"time"
 
 	"nimbleterminal.dev/ntmediabox"
@@ -24,19 +25,24 @@ type WorkerConfig struct {
 	WorkerArgs []string
 	// StagePath is the optional Linux stage helper path.
 	StagePath string
-	// Policy is the extra sandbox policy merged with DefaultLibPaths().
+	// Policy controls sandbox permissions. Empty ReadPaths and ExecPaths use
+	// DefaultLibPaths and DefaultExecPaths plus WorkerPath, respectively.
+	// Nonempty lists replace those defaults; WritePaths is never added here.
 	Policy ntmediabox.Policy
 	// AllowUnsandboxed permits running when OS sandbox enforcement is unavailable.
 	AllowUnsandboxed bool
-	// Timeout bounds the raster request (default DefaultWorkerTimeout).
+	// Timeout bounds the RPC (default DefaultWorkerTimeout). Synchronous
+	// process startup is not interrupted by this timeout.
 	Timeout time.Duration
 	// Client is an optional pre-connected RenderClient. When non-nil,
-	// RasterWorker uses Client directly and does not close it.
+	// RasterWorker leaves Client open on success. Invalid responses and RPC
+	// cancellation close it. The caller supplies confinement and a process kill
+	// hook; a bare RenderClient provides neither.
 	Client *ntmediabox.RenderClient
 }
 
 // WorkerRequest describes a single typesetting + rasterization request sent to
-// a confined ntmediabox worker.
+// an ntmediabox worker.
 type WorkerRequest struct {
 	Text         string
 	Language     string
@@ -49,8 +55,8 @@ type WorkerRequest struct {
 	View         View
 }
 
-// WorkerResult is the bounds-checked result returned by a confined ntmediabox
-// typesetting worker.
+// WorkerResult is the validated result returned by a typesetting worker.
+// Link geometry and positions are checked; URLs remain untrusted input.
 type WorkerResult struct {
 	Image   *image.RGBA
 	Extent  int
@@ -77,21 +83,25 @@ type workerRespMeta struct {
 }
 
 // DocumentBuilder parses raw input bytes into a Document inside a worker.
+// It must bound parsing, nesting and external resource loading itself;
+// engine limits only apply once a Document has been built.
 type DocumentBuilder func(ctx context.Context, data []byte, language string, pal Palette) (*Document, error)
 
-// RasterWorker lays out and rasterizes req inside a confined ntmediabox worker,
+// RasterWorker lays out and rasterizes req inside an ntmediabox worker,
 // returning a bounds-checked *image.RGBA and layout metrics.
 func RasterWorker(ctx context.Context, req WorkerRequest, cfg WorkerConfig) (WorkerResult, error) {
-	v := req.View
-	if v.Scale == 0 {
-		v.Scale = 1
+	v, size, err := checkedWorkerView(req.View, ntmediabox.MaxRenderPixels)
+	if err != nil {
+		return WorkerResult{}, err
 	}
-	if v.Width < 1 || v.Height < 1 || !(v.Scale > 0) {
-		return WorkerResult{}, errors.New("nttypeset: view must have a positive width, height and scale")
+	if len(req.Text) > ntmediabox.MaxRenderDataBytes {
+		return WorkerResult{}, &LimitError{What: "typeset worker input exceeds byte limit", Limit: ntmediabox.MaxRenderDataBytes}
 	}
-	size := v.Size()
-	if size.X < 1 || size.Y < 1 {
-		return WorkerResult{}, errors.New("nttypeset: view has no pixels")
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return WorkerResult{}, err
 	}
 
 	timeout := cfg.Timeout
@@ -108,7 +118,7 @@ func RasterWorker(ctx context.Context, req WorkerRequest, cfg WorkerConfig) (Wor
 		}
 		policy := cfg.Policy
 		if len(policy.ExecPaths) == 0 {
-			policy.ExecPaths = []string{cfg.WorkerPath}
+			policy.ExecPaths = append(ntmediabox.DefaultExecPaths(), cfg.WorkerPath)
 		}
 		if len(policy.ReadPaths) == 0 {
 			policy.ReadPaths = ntmediabox.DefaultLibPaths()
@@ -159,14 +169,14 @@ func RasterWorker(ctx context.Context, req WorkerRequest, cfg WorkerConfig) (Wor
 	if err != nil {
 		return WorkerResult{}, err
 	}
-	if resp.Image == nil {
-		return WorkerResult{}, errors.New("nttypeset: worker returned nil image")
+	if resp.Image == nil || resp.Image.Bounds() != image.Rect(0, 0, size.X, size.Y) {
+		_ = client.Close()
+		return WorkerResult{}, errors.New("nttypeset: worker returned unexpected raster dimensions")
 	}
-	var outMeta workerRespMeta
-	if len(resp.Meta) > 0 {
-		if err := json.Unmarshal(resp.Meta, &outMeta); err != nil {
-			return WorkerResult{}, fmt.Errorf("nttypeset: decode worker metadata: %w", err)
-		}
+	outMeta, err := decodeWorkerMeta(resp.Meta, resp.Image.Bounds())
+	if err != nil {
+		_ = client.Close()
+		return WorkerResult{}, err
 	}
 	return WorkerResult{
 		Image:   resp.Image,
@@ -177,8 +187,55 @@ func RasterWorker(ctx context.Context, req WorkerRequest, cfg WorkerConfig) (Wor
 	}, nil
 }
 
+// checkedWorkerView validates before float-to-int conversion or multiplication.
+// Both the host and worker enforce the same raster envelope.
+func checkedWorkerView(v View, maxPixels int) (View, image.Point, error) {
+	if v.Scale == 0 {
+		v.Scale = 1
+	}
+	if v.Width < 1 || v.Height < 1 || !(v.Scale > 0) || math.IsInf(v.Scale, 0) {
+		return v, image.Point{}, errors.New("nttypeset: view must have a positive width, height and finite scale")
+	}
+	if v.Pixels != (image.Point{}) && (v.Pixels.X < 1 || v.Pixels.Y < 1) {
+		return v, image.Point{}, errors.New("nttypeset: view has incomplete pixel dimensions")
+	}
+	if v.Pixels == (image.Point{}) && (math.Round(float64(v.Width)*v.Scale) > ntmediabox.MaxRenderSide || math.Round(float64(v.Height)*v.Scale) > ntmediabox.MaxRenderSide) {
+		return v, image.Point{}, &LimitError{What: "typeset worker raster exceeds side limit", Limit: ntmediabox.MaxRenderSide}
+	}
+	size := v.Size()
+	if size.X > ntmediabox.MaxRenderSide || size.Y > ntmediabox.MaxRenderSide {
+		return v, size, &LimitError{What: "typeset worker raster exceeds side limit", Limit: ntmediabox.MaxRenderSide}
+	}
+	if size.X > maxPixels/size.Y {
+		return v, size, &LimitError{What: "typeset worker raster exceeds pixel limit", Limit: int64(maxPixels)}
+	}
+	return v, size, nil
+}
+
+func decodeWorkerMeta(data []byte, bounds image.Rectangle) (workerRespMeta, error) {
+	// Pointers distinguish required fields from their valid zero values.
+	var wire struct {
+		Extent  *int   `json:"extent"`
+		ExtentX *int   `json:"extent_x"`
+		Done    *bool  `json:"done"`
+		Links   []Link `json:"links"`
+	}
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return workerRespMeta{}, fmt.Errorf("nttypeset: decode worker metadata: %w", err)
+	}
+	if wire.Extent == nil || wire.ExtentX == nil || wire.Done == nil || *wire.Extent < 0 || *wire.ExtentX < 0 || len(wire.Links) > defaultLimits.Operations {
+		return workerRespMeta{}, errors.New("nttypeset: invalid worker layout metadata")
+	}
+	for _, link := range wire.Links {
+		if link.Rect.Empty() || !link.Rect.In(bounds) || link.Block < 0 || link.Block >= defaultLimits.Blocks || link.Para < 0 || link.Runes[0] < 0 || link.Runes[1] < link.Runes[0] || link.Runes[1] > defaultLimits.Runes {
+			return workerRespMeta{}, errors.New("nttypeset: invalid worker link metadata")
+		}
+	}
+	return workerRespMeta{Extent: *wire.Extent, ExtentX: *wire.ExtentX, Done: *wire.Done, Links: wire.Links}, nil
+}
+
 // ServeWorker runs the worker-side typesetting loop over rwc (typically
-// os.NewFile(3, "media")) using Lines as the document builder.
+// ntmediabox.WorkerConn()) using Lines as the document builder.
 func ServeWorker(rwc io.ReadWriteCloser, fonts FaceSource, limits Limits) error {
 	return ServeWorkerWithBuilder(rwc, fonts, limits, func(ctx context.Context, data []byte, language string, pal Palette) (*Document, error) {
 		return Lines(ctx, string(data), language, pal.Syntax)
@@ -210,6 +267,17 @@ func ServeWorkerWithBuilder(rwc io.ReadWriteCloser, fonts FaceSource, limits Lim
 				return ntmediabox.RenderResponse{}, fmt.Errorf("nttypeset: invalid worker metadata: %w", err)
 			}
 		}
+		maxPixels := limits.Pixels
+		if req.MaxPixels > 0 {
+			maxPixels = min(maxPixels, req.MaxPixels)
+		}
+		v, size, err := checkedWorkerView(meta.View, maxPixels)
+		if err != nil {
+			return ntmediabox.RenderResponse{}, err
+		}
+		if req.Width != size.X || req.Height != size.Y {
+			return ntmediabox.RenderResponse{}, errors.New("nttypeset: worker view and raster envelope disagree")
+		}
 		if _, err := eng.SetFonts(meta.Look, meta.MonoOverride); err != nil {
 			return ntmediabox.RenderResponse{}, err
 		}
@@ -224,10 +292,6 @@ func ServeWorkerWithBuilder(rwc io.ReadWriteCloser, fonts FaceSource, limits Lim
 		doc, err := build(ctx, req.Data, meta.Language, pal)
 		if err != nil {
 			return ntmediabox.RenderResponse{}, err
-		}
-		v := meta.View
-		if v.Scale == 0 {
-			v.Scale = 1
 		}
 		lay, err := eng.Layout(doc, v.Width, LayoutOptions{
 			Numbers: meta.Numbers,

@@ -11,7 +11,8 @@ all are ignored.
 task ci                  # same gate as GitHub Actions; includes network scans
 task test                # tests
 task test-race           # tests under the race detector
-task lint                # golangci-lint v2.14.0, installed into .task/bin
+task fuzz                # mutate each worker fuzz target for 10 seconds
+task lint                # golangci-lint v2.15.0, installed into .task/bin
 task cross-windows       # check Windows compilation
 task cross-wasm          # check js/wasm compilation
 task notices             # regenerate THIRD_PARTY_NOTICES.md
@@ -34,7 +35,7 @@ on Linux and macOS. Tasks explicitly use `GOWORK=off`, except `build-wasm`,
 `test-wasm` and `vulncheck-wasm`, which point `GOWORK` at `wasm.work`; the site
 tasks that call them run under `GOWORK=off`.
 
-`task vulncheck` installs govulncheck v1.8.0 into `.task/bin` and scans the
+`task vulncheck` installs govulncheck v1.9.0 into `.task/bin` and scans the
 module. It requires network access to the Go vulnerability database; failures
 stop CI.
 
@@ -44,9 +45,19 @@ stop CI.
 examples module; the library's tests use `internal/testfonts` (the Go fonts),
 never ntfonts, while the demo's tests render with `ntfonts.Embedded`. Run one test with
 `GOWORK=off go test -mod=readonly -run 'TestName' .`. `task ci` is the full gate:
-format, tidy, verify, race tests, vet, lint, Windows and wasm builds, the notices
+format, tidy, verify, race tests, bounded fuzzing, vet, lint, Windows and wasm builds, the notices
 check, vulncheck, then the browser site build and its Node checks, the js/wasm
 tests and the browser vulnerability scan.
+
+`task fuzz` mutates worker view arithmetic, untrusted JSON metadata, and actual
+in-memory worker render round trips. CI runs each target for 10 seconds with two
+fuzz workers. For a longer local campaign, run
+`task fuzz FUZZ_TIME=5m FUZZ_PARALLEL=2` (the duration is per target). Ordinary
+`task test` also runs the seed corpus. Go records failures under
+`testdata/fuzz/<target>/`; preserve reproducible failures there as regression
+inputs. The render harness caps text and link strings at 512 bytes, and the
+metadata harness caps JSON at 64 KiB to bound campaign cost. These tests do not
+replace the upstream hostile-wire fuzzers or OS confinement tests.
 
 Pixel parity with gloss is checked in gloss, not here: gloss's
 `scripts/typeset-baseline.sh` exports typeset PNGs across fonts and themes

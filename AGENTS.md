@@ -22,7 +22,7 @@ What it is not:
   SVGs only; these do not supply the document's faces.
 
 Longer-form docs: `README.md` (overview), `DEVELOP.md` (tooling and releases),
-`CHANGELOG.md`. Pixel parity with gloss is checked in gloss.
+`CHANGELOG.md`, and `SECURITY.md` (trust boundaries and worker deployment). Pixel parity with gloss is checked in gloss.
 
 ## Commands
 
@@ -35,6 +35,7 @@ checks need Node 24.
 task ci                  # full gate, same as GitHub Actions (vulncheck needs network)
 task test                # tests
 task test-race           # race detector (needs a C compiler)
+task fuzz                # worker fuzz campaigns (10s per target; FUZZ_TIME overrides)
 task lint                # golangci-lint v2 (installed into .task/bin)
 task vet fmt fmt-check go-tidy-check go-verify
 task build cross-windows cross-wasm
@@ -104,6 +105,7 @@ Root package `nttypeset`:
 | `palette.go` | `Palette` (its `Mark` tint, else Selection blended with Background), `LightPalette`, `DarkPalette`. |
 | `raster.go` | `Layout.Raster`, `Links`, `Images`, `RasterOptions` with its `Marks` (`Mark`, `Link.Mark`); draws the display list. |
 | `select.go` | `Place`, `Selection`, `Selected`, `Layout.Select`: logical selection and carets; `Hit` and `Layout.TextAt`, the text under a point. |
+| `worker.go` | ntmediabox request validation, confined helper lifecycle, worker builders and validated raster/metadata responses. |
 | `preview.go` | `Preview`: the font chooser picture. |
 | `export_test.go` | Test-only access to unexported engine methods. |
 | `*_test.go` | Tests for the file of the same name; `example_test.go` holds `ExampleLines`. |

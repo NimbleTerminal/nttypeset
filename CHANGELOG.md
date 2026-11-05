@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add worker view, metadata and render round-trip fuzz targets, with bounded mutation campaigns in CI.
+- Split Unicode paragraph separators before shaping and wrapping, fixing a recovered panic on control-character input found by fuzzing.
+
+- Validate worker raster envelopes and layout/link metadata, close invalid worker sessions, and document the security boundary in SECURITY.md.
+
 - Migrate the demos to `nimbleterminal.dev/booba` v0.12.1 and its ntwebterm browser runtime.
 - Update oksvg to v0.1.6, ntfonts to v0.3.1, ntpicture to v0.1.5, and terminfo to v1.3.1; pin published ntmediabox and ntconfine releases instead of sibling checkouts.
 - Update CI to Go 1.27.3, golangci-lint v2.15.0, and govulncheck v1.9.0.

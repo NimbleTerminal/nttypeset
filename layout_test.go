@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -1039,5 +1040,36 @@ func TestLayoutBounds(t *testing.T) {
 		if b.Empty() || b.Min.Y < starts[i] {
 			t.Fatalf("block %d: %v from %d", i, b, starts[i])
 		}
+	}
+}
+
+func TestParagraphSeparators(t *testing.T) {
+	// Each separator is an explicit break, including trailing/empty paragraphs.
+	// CRLF is a single break even when its two bytes have different styles.
+	for _, separator := range []string{"\n", "\r", "\r\n", "\x1c", "\x1d", "\x1e", "\u0085", "\u2028", "\u2029"} {
+		t.Run(fmt.Sprintf("%q", separator), func(t *testing.T) {
+			e := testEngine(t)
+			lay, err := e.Layout(&Document{Blocks: []Block{{Spans: []Span{{Text: "a" + separator + "b"}}}}}, 200, LayoutOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := lay.Complete(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			if len(lay.ops) != 2 || lay.ops[0].para != 0 || lay.ops[1].para != 1 || lay.ops[1].rect.Min.Y <= lay.ops[0].rect.Min.Y {
+				t.Fatalf("expected two paragraphs on consecutive lines: %+v", lay.ops)
+			}
+		})
+	}
+	e := testEngine(t)
+	lay, err := e.Layout(&Document{Blocks: []Block{{Spans: []Span{{Text: "a\r"}, {}, {Text: "\nb", Style: Bold}}}}}, 200, LayoutOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := lay.Complete(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(lay.ops) != 2 || lay.ops[1].para != 1 || lay.ops[1].style != Bold {
+		t.Fatalf("CRLF across spans added a paragraph or lost style: %+v", lay.ops)
 	}
 }

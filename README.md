@@ -104,6 +104,14 @@ img, _ := lay.Raster(ctx, nttypeset.View{Width: 800, Height: 600, Scale: 1},
 image lays out as the text `[image unavailable: dest]`; `Options.Bounds` sets an
 image's size and alignment from its node.
 
+## Security and worker isolation
+
+For untrusted documents, `RasterWorker` can build, lay out and rasterize raw
+input in an OS-confined ntmediabox helper. `ServeWorker` handles line documents;
+`ServeWorkerWithBuilder` accepts a custom parser inside the worker. The demos
+render in-process. See [SECURITY.md](SECURITY.md) for setup, platform support,
+resource limits, URL handling and the caller-supplied client contract.
+
 ## Demo
 
 `examples/typeset` shows a Markdown or text file in the terminal through

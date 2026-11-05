@@ -243,6 +243,15 @@ func (l *Layout) Find(ctx context.Context, href string) (r image.Rectangle, foun
 	}
 }
 
+// paragraphSeparators includes the Unicode bidi paragraph separators. The
+// segmenter only consumes one bidi paragraph, so leaving any of these inside
+// the text passed to LineWrapper can leave runes with no corresponding run.
+var paragraphSeparators = strings.NewReplacer(
+	"\r\n", "\n", "\r", "\n",
+	"\x1c", "\n", "\x1d", "\n", "\x1e", "\n",
+	"\u0085", "\n", "\u2028", "\n", "\u2029", "\n",
+)
+
 func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 	// go-text wraps one paragraph at a time. Preserve explicit line breaks,
 	// including empty code lines, rather than feeding paragraph separators to it.
@@ -251,8 +260,16 @@ func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 	}
 	var paragraphs [][]Span
 	current := []Span{}
+	previousCR := false
 	for _, sp := range spans {
-		parts := strings.Split(sp.Text, "\n")
+		text := sp.Text
+		if text != "" {
+			if previousCR {
+				text = strings.TrimPrefix(text, "\n")
+			}
+			previousCR = strings.HasSuffix(sp.Text, "\r")
+		}
+		parts := strings.Split(paragraphSeparators.Replace(text), "\n")
 		for i, part := range parts {
 			if i > 0 {
 				paragraphs = append(paragraphs, current)
