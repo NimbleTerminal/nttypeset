@@ -169,3 +169,14 @@ version, push the tag, and verify the version on pkg.go.dev once tag CI passes.
 The section model and adapter contract are documented in [docs/sections.md](docs/sections.md).
 `go run ./internal/tools/sections` regenerates the illustrative before/after PNGs;
 they are demonstration artifacts, never pixel-test reference data.
+
+## Chunked documents
+
+`ChunkSource` supplies immutable bounded ASTs; `Chunked` loads them on demand
+and holds two layouts. Providers choose semantic boundaries and bound their own
+source storage and assets. The cache shares its engine and must be serialized
+with it. Positions remain chunk-local; consumers retain the chunk index beside
+their anchors. `LineChunks` indexes a bounded text string without eagerly
+highlighting or shaping it. Its global line ranges feed the optional layout
+gutter offsets. Tests cover distant AST navigation, eviction, cancellation,
+font invalidation, Unicode boundaries and whole-history line reconstruction.

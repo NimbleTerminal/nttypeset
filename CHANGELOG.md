@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.2.0 - 2026-11-05
+
+- Add lazy AST chunk sources with a two-layout cache for long documents and conversations.
+- Add bounded UTF-8 line chunks with global line navigation and numbering.
+
 ## v0.1.9 - 2026-11-05
 
 - Add `RasterWorker`, `ServeWorker`, and `ServeWorkerWithBuilder` for typesetting in an OS-confined ntmediabox helper.

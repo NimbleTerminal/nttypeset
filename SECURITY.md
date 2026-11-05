@@ -170,3 +170,14 @@ CI runs each target for 10 seconds; longer campaigns can use
 notices checks and vulnerability scans. These checks are not a security audit
 or a visual review. Keep Go and dependencies patched and recheck upstream
 security policies whenever the confinement or transport pins change.
+
+### Long documents
+
+`Chunked` retains two layouts and never relaxes a layout limit. A `ChunkSource`
+is application code, running in the caller's process: it must honor cancellation
+and bound its storage, parsing and assets. Holding returned chunks beyond cache
+eviction retains their resources. `LineChunks` retains at most 128 MiB of UTF-8
+source and indexes chunks capped at 256 lines / 64 KiB. Highlighting and layout
+happen on demand under the ordinary limits; a line cannot exceed 64 KiB or the
+layout's paragraph rune ceiling. These APIs do not add an OS sandbox or change
+the worker protocol.

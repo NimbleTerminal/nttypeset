@@ -21,6 +21,11 @@ What it is not:
   `ntfonts.Embedded`. The oksvg fork embeds Go font fallbacks for text inside
   SVGs only; these do not supply the document's faces.
 
+`ChunkSource` supplies bounded semantic AST documents for long histories.
+`Chunked` caches two layouts; `LineChunks` supplies indexed UTF-8 text chunks.
+Hosts own source budgets, chunk navigation and chunk-qualified positions.
+Each chunk retains all ordinary layout limits.
+
 Longer-form docs: `README.md` (overview), `DEVELOP.md` (tooling and releases),
 `CHANGELOG.md`, and `SECURITY.md` (trust boundaries and worker deployment). Pixel parity with gloss is checked in gloss.
 

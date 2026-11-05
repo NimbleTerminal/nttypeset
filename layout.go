@@ -44,8 +44,13 @@ type operation struct {
 // LayoutOptions are the layout choices that apply to Lines documents only;
 // on any other document they are ignored.
 type LayoutOptions struct {
-	Numbers bool // a gutter of line numbers left of the lines
-	Chop    bool // each line on one row, unwrapped, instead of wrapped
+	// LineOffset is added to gutter numbers for a chunk of a Lines document.
+	// LineCount reserves a consistent gutter for the full source, if larger.
+	// Both are bounded to 128 million lines; zero preserves existing behavior.
+	LineOffset int
+	LineCount  int
+	Numbers    bool // a gutter of line numbers left of the lines
+	Chop       bool // each line on one row, unwrapped, instead of wrapped
 }
 
 // Layout is an incremental layout of a Document at one width. It lays out
@@ -66,7 +71,9 @@ type Layout struct {
 	doc            *Document
 	width, y, next int
 	ops            []operation
-	para           int  // Paragraphs laid out of the current block.
+	para           int // Paragraphs laid out of the current block.
+	lineOffset     int
+	lineCount      int
 	numbers        bool // Lay a gutter of line numbers left of the lines.
 	gutter         int  // Its width in page pixels, once measured.
 	chop           bool // Lay each line on one row, however long, instead of wrapping it.
@@ -117,7 +124,13 @@ func (e *Engine) Layout(doc *Document, width int, opts LayoutOptions) (*Layout, 
 	if width < 1 {
 		return nil, errors.New("nttypeset: width must be positive")
 	}
-	l := &Layout{e: e, doc: doc, width: width, y: Margin, numbers: opts.Numbers, chop: opts.Chop, fontGeneration: e.fontGeneration}
+	if !doc.Lines {
+		opts.LineOffset, opts.LineCount = 0, 0
+	}
+	if opts.LineOffset < 0 || opts.LineCount < 0 || opts.LineOffset > (128<<20)-len(doc.Blocks) || opts.LineCount > 128<<20 {
+		return nil, &LimitError{What: "typeset line numbering exceeds 128 million lines", Limit: 128 << 20}
+	}
+	l := &Layout{e: e, doc: doc, width: width, y: Margin, numbers: opts.Numbers, chop: opts.Chop, fontGeneration: e.fontGeneration, lineOffset: opts.LineOffset, lineCount: max(opts.LineCount, opts.LineOffset+len(doc.Blocks))}
 	if err := l.initSections(); err != nil {
 		return nil, err
 	}
@@ -367,7 +380,7 @@ func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 // document has, in the monospace face at the lines' size, and a gap.
 func (l *Layout) gutterWidth(size int) int {
 	if l.gutter == 0 {
-		digits := strings.Repeat("0", len(strconv.Itoa(len(l.doc.Blocks))))
+		digits := strings.Repeat("0", len(strconv.Itoa(l.lineCount)))
 		var advance fixed.Int26_6
 		for _, run := range l.e.shape([]Span{{Text: digits, Style: Mono}}, size).runs {
 			advance += run.Advance
@@ -381,9 +394,9 @@ func (l *Layout) gutterWidth(size int) int {
 // not a paragraph of the block: places in the text stay the same with or
 // without numbers.
 func (l *Layout) number(n, size int) {
-	digits := len(strconv.Itoa(len(l.doc.Blocks)))
+	digits := len(strconv.Itoa(l.lineCount))
 	para := l.para
-	ops, _ := l.text([]Span{{Text: fmt.Sprintf("%*d", digits, n), Style: Mono}}, size, Margin, l.y, l.gutter)
+	ops, _ := l.text([]Span{{Text: fmt.Sprintf("%*d", digits, n+l.lineOffset), Style: Mono}}, size, Margin, l.y, l.gutter)
 	l.para = para
 	for i := range ops {
 		ops[i].gutter, ops[i].para = true, -1

@@ -24,6 +24,25 @@ as `ntfonts.Embedded`.
 go get nimbleterminal.dev/nttypeset nimbleterminal.dev/ntfonts
 ```
 
+## Long documents
+
+Implement `ChunkSource` to supply independently lay-outable AST documents, for
+example conversation turns with stable `SourceID`s. `Engine.NewChunked(source)`
+creates a lazy cache; `At(ctx, index, width, options)` loads just that chunk and
+returns its document and incremental layout. It retains two recent chunks,
+sharing the engine's bounded shaping and raster caches. First/last navigation
+does not lay out the intervening history. All normal layout limits still apply
+to each chunk. The host owns navigation, source storage and semantic boundaries;
+keep the chunk index with anchors or selections, whose places are chunk-local.
+
+`NewLineChunks(ctx, text, language, style)` supplies the same interface for up to
+128 MiB of UTF-8 text, indexed without building the whole AST. It packs at most
+256 lines and 64 KiB per chunk. Use `LineRange` and `ChunkForLine` for global
+navigation, and `LayoutOptions.LineOffset` / `LineCount` for a consistent numbered
+gutter. Highlighting starts afresh in each chunk; applications needing lexer or
+Markdown context across boundaries should supply parsed AST chunks instead.
+An individual line must fit 64 KiB and the ordinary paragraph rune limit.
+
 ## SVG rendering dependencies
 
 `nttypeset/raster` imports `github.com/NimbleMarkets/oksvg` (`v0.1.6`) directly
