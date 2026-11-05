@@ -9,7 +9,7 @@ blocks and styled spans and rasters viewports into `*image.RGBA`. It has
 incremental layout, a shaping engine with bounded caches, a glyph-mask
 rasterizer, logical selection, and link and image hit areas. It was extracted
 from gloss's `--typeset` view. Develop with Go 1.27.3; the module minimum is
-Go 1.26.
+Go 1.26.8.
 
 What it is not:
 
@@ -153,7 +153,7 @@ Breaking these breaks consumers, even if tests still pass.
   `web/ntwebterm`, `web/ghostty-web` and the copied files are build output.
 - **The display list is private.** It is not exported API.
 - **The core imports only go-text/typesetting, NimbleMarkets/oksvg, rasterx,
-  chroma and x/image** (plus the standard library). goldmark belongs to the
+  chroma, x/image and ntmediabox** (plus the standard library). goldmark belongs to the
   `goldmark` subpackage alone.
 - **No concurrent use.** An `Engine` or `Layout` is not safe for concurrent use;
   the caller serializes access.

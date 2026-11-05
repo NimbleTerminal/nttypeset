@@ -1,6 +1,6 @@
 # Development
 
-Use Go 1.27.3 for development and CI (the module minimum is Go 1.26). The
+Use Go 1.27.3 for development and CI (the module minimum is Go 1.26.8). The
 library is one module; `examples/` is a second module holding the demos, with a
 `replace` to the parent directory. The demos also build for the browser; see
 [Browser site](#browser-site). Installed QA tools live in `.task/bin/` and
@@ -74,6 +74,7 @@ output needs that check before release.
 The core depends on go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.6,
 rasterx, chroma v2.27.0, and x/image v0.47.0 (with shaped-run outline, bitmap,
 and SVG glyph rendering in `raster` adapted from `go-text/render` v0.2.1).
+The worker API also depends on ntmediabox v0.1.0 and its ntconfine dependencies.
 goldmark appears only in the `goldmark` subpackage. It never depends on
 ntpicture, Bubble Tea, ntfonts, or gloss. Programs that want the embedded faces
 import ntfonts themselves and pass `ntfonts.Embedded` to `WithFonts`. The
@@ -105,7 +106,7 @@ site is the `web/` directory: `index.html`, `site.js`, `site.css` and
 Bubble Tea for a browser fork, because upstream does not run in a browser.
 Native builds and `GOWORK=off` tasks never see it. `go work sync` bumps the root
 `go.mod` to the workspace's Go version; revert that so the library minimum stays
-`go 1.26.0`.
+`go 1.26.8`.
 
 ```sh
 task build-wasm          # web/demos/{typeset,specimen,hackernews}.wasm

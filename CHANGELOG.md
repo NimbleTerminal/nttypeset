@@ -2,15 +2,16 @@
 
 ## Unreleased
 
-- Build a pure-Go confinement helper for Linux tests so race-enabled CI can exercise the sandbox without relaxing its policy.
+## v0.1.9 - 2026-11-05
 
+- Add `RasterWorker`, `ServeWorker`, and `ServeWorkerWithBuilder` for typesetting in an OS-confined ntmediabox helper.
+- Validate worker raster envelopes and layout/link metadata, close invalid worker sessions, and document the security boundary in SECURITY.md.
+- Build a pure-Go confinement helper for Linux tests so race-enabled CI can exercise the sandbox without relaxing its policy.
 - Add worker view, metadata and render round-trip fuzz targets, with bounded mutation campaigns in CI.
 - Split Unicode paragraph separators before shaping and wrapping, fixing a recovered panic on control-character input found by fuzzing.
-
-- Validate worker raster envelopes and layout/link metadata, close invalid worker sessions, and document the security boundary in SECURITY.md.
-
 - Migrate the demos to `nimbleterminal.dev/booba` v0.12.1 and its ntwebterm browser runtime.
 - Update oksvg to v0.1.6, ntfonts to v0.3.1, ntpicture to v0.1.5, and terminfo to v1.3.1; pin published ntmediabox and ntconfine releases instead of sibling checkouts.
+- Raise the minimum Go version to 1.26.8.
 - Update CI to Go 1.27.3, golangci-lint v2.15.0, and govulncheck v1.9.0.
 
 ## v0.1.8 - 2026-10-31

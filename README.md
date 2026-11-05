@@ -196,3 +196,7 @@ and [`rasterx`](https://github.com/srwiley/rasterx), and to
 
 MIT; see [LICENSE](./LICENSE), [NOTICE.md](./NOTICE.md), and
 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+
+The worker dependencies `ntmediabox` and `ntconfine` have separate dual
+AGPL-3.0-only/commercial licenses with a NimbleTerminal open-source linking
+exception. Their full terms are included in the third-party notices.
