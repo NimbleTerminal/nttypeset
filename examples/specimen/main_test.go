@@ -6,7 +6,7 @@ import (
 	"image"
 	"testing"
 
-	"github.com/NimbleMarkets/go-booba/actions/bubblehelp"
+	"nimbleterminal.dev/booba/actions/bubblehelp"
 	nt "nimbleterminal.dev/ntpicture"
 	"nimbleterminal.dev/nttypeset"
 	"nimbleterminal.dev/nttypeset/examples/internal/demorun"

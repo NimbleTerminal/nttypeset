@@ -8,7 +8,7 @@ Guidance for coding agents working in this repository.
 blocks and styled spans and rasters viewports into `*image.RGBA`. It has
 incremental layout, a shaping engine with bounded caches, a glyph-mask
 rasterizer, logical selection, and link and image hit areas. It was extracted
-from gloss's `--typeset` view. Develop with Go 1.27.2; the module minimum is
+from gloss's `--typeset` view. Develop with Go 1.27.3; the module minimum is
 Go 1.26.
 
 What it is not:
@@ -67,7 +67,7 @@ Never add sibling `replace` directives: ntfonts and ntpicture are pinned by
 version.
 
 Glyph outline and SVG glyph rendering in `raster` (adapted from
-`go-text/render` v0.2.1) imports `github.com/NimbleMarkets/oksvg v0.1.4`
+`go-text/render` v0.2.1) imports `github.com/NimbleMarkets/oksvg v0.1.6`
 directly and uses a versioned replacement for `rasterx`:
 `github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0`.
 Keep this replacement identical in root and examples `go.mod`; dependency
@@ -76,11 +76,11 @@ replacement too. Use published versions, never sibling paths. Consumers that
 want the `rasterx` fork add the replacement to their own main module; keep the
 README instructions current when changing pins.
 
-Dependencies: go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.4, rasterx,
+Dependencies: go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.6, rasterx,
 chroma v2.27.0, and x/image v0.47.0. goldmark v1.8.7 and goldmark-emoji v1.0.6
 are allowed only in the `goldmark` subpackage. The library never imports
 ntpicture, Bubble Tea, ntfonts, or gloss; the examples module imports all but
-gloss, and adds booba (go-booba) and bubbles for the browser build.
+gloss, and adds booba (`nimbleterminal.dev/booba`) and bubbles for the browser build.
 
 Generated output is ignored: `bin/`, `dist/`, `.task/`, and the site's build
 output under `web/`.
@@ -121,7 +121,7 @@ Other packages:
 | `examples/hackernews` | A live Hacker News front-page reader in the HN palette, with story and comment links, in the terminal or as a PNG with `-o`; also available in the browser site. |
 | `examples/internal/demorun` | Publishes a demo's keys as booba actions and runs it; `demorun.Check` and the `...KeysFitBooba` tests guard booba's 2048-byte status-message cap. |
 | `examples/internal/pixels` | The demos' shared test helper: counts pixels that differ from a colour. |
-| `web/` | The Pages site: `index.html`, `site.js`, `site.css` and `licenses/` are source; `demos/`, `booba/`, `ghostty-web/` and the copied files are build output. |
+| `web/` | The Pages site: `index.html`, `site.js`, `site.css` and `licenses/` are source; `demos/`, `booba/`, `ntwebterm/`, `ghostty-web/` and the copied files are build output. |
 | `scripts/` | Node scripts: `check-site.mjs` checks the built site; `smoke-demo.mjs` runs a demo's wasm under Node. |
 | `wasm.work` | The Go workspace for js/wasm builds; swaps in the browser Bubble Tea fork. |
 | `testdata/` | Fixtures for tests. |
@@ -148,7 +148,7 @@ Breaking these breaks consumers, even if tests still pass.
 - **Caches are bounded.** The shaped-run cache and the glyph-mask cache are each
   capped at 32 MiB.
 - **Generated site assets are never committed.** `web/demos`, `web/booba`,
-  `web/ghostty-web` and the copied files are build output.
+  `web/ntwebterm`, `web/ghostty-web` and the copied files are build output.
 - **The display list is private.** It is not exported API.
 - **The core imports only go-text/typesetting, NimbleMarkets/oksvg, rasterx,
   chroma and x/image** (plus the standard library). goldmark belongs to the

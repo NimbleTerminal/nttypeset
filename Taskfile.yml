@@ -4,8 +4,8 @@ env:
   GOWORK: 'off'
 
 vars:
-  GOVULNCHECK_VERSION: v1.8.0
-  GOLANGCI_LINT_VERSION: v2.14.0
+  GOVULNCHECK_VERSION: v1.9.0
+  GOLANGCI_LINT_VERSION: v2.15.0
 
 tasks:
   default:
@@ -47,11 +47,11 @@ tasks:
     env: {GOOS: '', GOARCH: '', GOBIN: '{{.ROOT_DIR}}/.task/bin'}
     cmds:
       - |
-        if test -x "{{.ROOT_DIR}}/.task/bin/golangci-lint"; then
+        V="{{.GOLANGCI_LINT_VERSION}}"
+        if test -x "{{.ROOT_DIR}}/.task/bin/golangci-lint" && "{{.ROOT_DIR}}/.task/bin/golangci-lint" version 2>/dev/null | grep -Fq "${V#v}"; then
           exit 0
         fi
-        V="{{.GOLANGCI_LINT_VERSION}}"
-        if command -v golangci-lint >/dev/null && golangci-lint version 2>/dev/null | grep -Fq "${V#v}"; then
+        if ! test -x "{{.ROOT_DIR}}/.task/bin/golangci-lint" && command -v golangci-lint >/dev/null && golangci-lint version 2>/dev/null | grep -Fq "${V#v}"; then
           exit 0
         fi
         go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
@@ -198,4 +198,4 @@ tasks:
       - task: vulncheck-wasm
   clean:
     desc: Remove generated binaries and task tools
-    cmds: ['rm -rf bin dist .task web/demos web/booba web/ghostty-web web/wasm_exec.js web/LICENSE web/THIRD_PARTY_NOTICES.md']
+    cmds: ['rm -rf bin dist .task web/demos web/booba web/ntwebterm web/ghostty-web web/wasm_exec.js web/LICENSE web/THIRD_PARTY_NOTICES.md']

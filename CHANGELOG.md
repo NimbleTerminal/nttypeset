@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Migrate the demos to `nimbleterminal.dev/booba` v0.12.1 and its ntwebterm browser runtime.
+- Update oksvg to v0.1.6, ntfonts to v0.3.1, ntpicture to v0.1.5, and terminfo to v1.3.1; pin published ntmediabox and ntconfine releases instead of sibling checkouts.
+- Update CI to Go 1.27.3, golangci-lint v2.15.0, and govulncheck v1.9.0.
+
 ## v0.1.8 - 2026-10-31
 
 - Try optional `FallbackSource` families after Literata or Iosevka, cache loads

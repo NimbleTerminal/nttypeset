@@ -26,7 +26,7 @@ go get nimbleterminal.dev/nttypeset nimbleterminal.dev/ntfonts
 
 ## SVG rendering dependencies
 
-`nttypeset/raster` imports `github.com/NimbleMarkets/oksvg` (`v0.1.4`) directly
+`nttypeset/raster` imports `github.com/NimbleMarkets/oksvg` (`v0.1.6`) directly
 and uses `rasterx` to rasterize glyph outlines and SVG glyphs embedded in fonts.
 This repository pins our `rasterx` fork through a `replace` directive in both Go
 modules:
@@ -133,7 +133,7 @@ also available in the browser site as `?demo=hackernews`.
 ### Browser demos
 
 All three demos run in the browser at `https://nimbleterminal.github.io/nttypeset/`,
-compiled to WebAssembly and shown through booba and ghostty-web.
+compiled to WebAssembly and shown through booba and ntwebterm.
 The Hacker News demo fetches the public API directly, with no proxy; browser
 links open in a new tab, with a clickable fallback if popups are blocked.
 `task serve-wasm-site` serves the same site locally.

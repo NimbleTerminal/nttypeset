@@ -10,8 +10,8 @@ import (
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/NimbleMarkets/go-booba/actions/bubblehelp"
 	"github.com/charmbracelet/x/ansi"
+	"nimbleterminal.dev/booba/actions/bubblehelp"
 	"nimbleterminal.dev/ntfonts"
 	nt "nimbleterminal.dev/ntpicture"
 	"nimbleterminal.dev/nttypeset"

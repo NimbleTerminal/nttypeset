@@ -1,6 +1,6 @@
 # Development
 
-Use Go 1.27.2 for development and CI (the module minimum is Go 1.26). The
+Use Go 1.27.3 for development and CI (the module minimum is Go 1.26). The
 library is one module; `examples/` is a second module holding the demos, with a
 `replace` to the parent directory. The demos also build for the browser; see
 [Browser site](#browser-site). Installed QA tools live in `.task/bin/` and
@@ -55,17 +55,17 @@ output needs that check before release.
 
 ## Dependencies
 
-The core depends on go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.4,
+The core depends on go-text typesetting v0.3.5, NimbleMarkets/oksvg v0.1.6,
 rasterx, chroma v2.27.0, and x/image v0.47.0 (with shaped-run outline, bitmap,
 and SVG glyph rendering in `raster` adapted from `go-text/render` v0.2.1).
 goldmark appears only in the `goldmark` subpackage. It never depends on
 ntpicture, Bubble Tea, ntfonts, or gloss. Programs that want the embedded faces
 import ntfonts themselves and pass `ntfonts.Embedded` to `WithFonts`. The
-examples module pins ntfonts, ntpicture, Bubble Tea, bubbles and go-booba. The
-notices cover the library, adapted code, the demos and the browser runtime
-(booba, ghostty-web and pako), since the site distributes them.
+examples module pins ntfonts, ntpicture, Bubble Tea, bubbles and booba
+(`nimbleterminal.dev/booba`). The notices cover the library, adapted code, the demos and the browser runtime
+(booba, ntwebterm, ghostty and pako), since the site distributes them.
 
-Glyph and SVG rendering imports `github.com/NimbleMarkets/oksvg` v0.1.4
+Glyph and SVG rendering imports `github.com/NimbleMarkets/oksvg` v0.1.6
 directly and pins the `rasterx` fork (`github.com/srwiley/rasterx =>
 github.com/neomantra/rasterx v0.1.0`) through matching versioned replacements
 in both `go.mod` files; see the
@@ -81,7 +81,7 @@ every machine. `task notices-check` enforces that generated text in CI.
 ## Browser site
 
 All three demos run in the browser at `https://nimbleterminal.github.io/nttypeset/`.
-They are compiled to js/wasm and shown through go-booba and ghostty-web. The
+They are compiled to js/wasm and shown through booba and ntwebterm. The
 site is the `web/` directory: `index.html`, `site.js`, `site.css` and
 `licenses/` are source, and everything else the build puts there is output.
 
@@ -101,7 +101,7 @@ task test-wasm           # the examples module's tests under js/wasm with Node
 task vulncheck-wasm      # govulncheck on the browser build (requires network)
 ```
 
-`web/demos`, `web/booba`, `web/ghostty-web`, `web/wasm_exec.js`, `web/LICENSE`
+`web/demos`, `web/booba`, `web/ntwebterm`, `web/ghostty-web`, `web/wasm_exec.js`, `web/LICENSE`
 and `web/THIRD_PARTY_NOTICES.md` are ignored and never committed.
 `task clean` removes them.
 

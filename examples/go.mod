@@ -5,19 +5,19 @@ go 1.26.8
 require (
 	charm.land/bubbles/v2 v2.2.1
 	charm.land/bubbletea/v2 v2.1.1
-	github.com/NimbleMarkets/go-booba v0.10.7
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/yuin/goldmark v1.8.7
 	github.com/yuin/goldmark-emoji v1.0.6
-	nimbleterminal.dev/ntfonts v0.2.0
-	nimbleterminal.dev/ntpicture v0.1.4
+	nimbleterminal.dev/booba v0.12.1
+	nimbleterminal.dev/ntfonts v0.3.1
+	nimbleterminal.dev/ntpicture v0.1.5
 	nimbleterminal.dev/nttypeset v0.0.0
 )
 
 require (
 	charm.land/lipgloss/v2 v2.0.6 // indirect
-	github.com/NimbleMarkets/oksvg v0.1.4 // indirect
+	github.com/NimbleMarkets/oksvg v0.1.6 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20261023060817-a45b7c86333f // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
@@ -33,23 +33,21 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-	github.com/xo/terminfo v1.3.0 // indirect
+	github.com/xo/terminfo v1.3.1 // indirect
 	golang.org/x/image v0.47.0 // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	nimbleterminal.dev/ntmediabox v0.0.0 // indirect
-	nimbleterminal.dev/ntmediabox/pkg/mediabox v0.0.0 // indirect
+	nimbleterminal.dev/ntconfine v0.1.1 // indirect
+	nimbleterminal.dev/ntconfine/pkg/confine v0.1.0 // indirect
+	nimbleterminal.dev/ntmediabox v0.1.0 // indirect
+	nimbleterminal.dev/ntmediabox/pkg/mediabox v0.1.0 // indirect
 )
 
 replace nimbleterminal.dev/nttypeset => ..
 
-replace nimbleterminal.dev/ntmediabox => ../../ntmediabox
-
-replace nimbleterminal.dev/ntmediabox/pkg/mediabox => ../../ntmediabox/pkg/mediabox
-
 // Dependency replacements are not inherited from the parent module.
 replace github.com/srwiley/rasterx => github.com/neomantra/rasterx v0.1.0
 
-tool github.com/NimbleMarkets/go-booba/cmd/booba-assets
+tool nimbleterminal.dev/booba/cmd/booba-assets

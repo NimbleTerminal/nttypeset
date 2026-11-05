@@ -6,8 +6,8 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"github.com/NimbleMarkets/go-booba/actions/bubblehelp"
 	"github.com/charmbracelet/x/ansi"
+	"nimbleterminal.dev/booba/actions/bubblehelp"
 )
 
 func TestBindingUsesFirstShortcutForHelp(t *testing.T) {

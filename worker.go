@@ -126,7 +126,7 @@ func RasterWorker(ctx context.Context, req WorkerRequest, cfg WorkerConfig) (Wor
 		if err != nil {
 			return WorkerResult{}, fmt.Errorf("nttypeset: start worker: %w", err)
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 	}
 
 	metaBytes, err := json.Marshal(workerReqMeta{

@@ -43,8 +43,8 @@ func init() {
 
 func TestRasterWorkerInMemoryPipe(t *testing.T) {
 	c1, c2 := net.Pipe()
-	defer c1.Close()
-	defer c2.Close()
+	defer func() { _ = c1.Close() }()
+	defer func() { _ = c2.Close() }()
 
 	done := make(chan error, 1)
 	go func() {
@@ -54,7 +54,9 @@ func TestRasterWorkerInMemoryPipe(t *testing.T) {
 	client := ntmediabox.NewRenderClient(c1)
 	defer func() {
 		_ = client.Close()
-		<-done
+		if err := <-done; err != nil {
+			t.Errorf("ServeWorker: %v", err)
+		}
 	}()
 
 	res, err := RasterWorker(context.Background(), WorkerRequest{

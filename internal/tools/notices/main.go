@@ -140,7 +140,7 @@ internal/tools/notices.
 	if len(missing) > 0 {
 		return fmt.Errorf("no license file in: %s", strings.Join(missing, ", "))
 	}
-	for _, name := range []string{"ghostty-web", "ghostty", "pako"} {
+	for _, name := range []string{"ntwebterm", "ghostty", "pako"} {
 		text, err := os.ReadFile(filepath.Join("web", "licenses", name+".txt"))
 		if err != nil {
 			return err
