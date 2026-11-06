@@ -131,6 +131,9 @@ func (e *Engine) Layout(doc *Document, width int, opts LayoutOptions) (*Layout, 
 		return nil, &LimitError{What: "typeset line numbering exceeds 128 million lines", Limit: 128 << 20}
 	}
 	l := &Layout{e: e, doc: doc, width: width, y: Margin, numbers: opts.Numbers, chop: opts.Chop, fontGeneration: e.fontGeneration, lineOffset: opts.LineOffset, lineCount: max(opts.LineCount, opts.LineOffset+len(doc.Blocks))}
+	if err := l.initTables(); err != nil {
+		return nil, err
+	}
 	if err := l.initSections(); err != nil {
 		return nil, err
 	}
@@ -571,6 +574,10 @@ func (l *Layout) block() {
 }
 
 func (l *Layout) table(b *Block, x, width int) {
+	if b.Table != nil {
+		l.styledTable(b, x, width)
+		return
+	}
 	if len(b.Rows) == 0 {
 		l.y += blockGap(b, 0)
 		return

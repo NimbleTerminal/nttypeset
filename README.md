@@ -198,6 +198,21 @@ blocks and sections can carry opaque `SourceID` values. Use
 `Layout.AnchorBounds` for navigation and `Layout.SourceAt` for hit/selection
 identity. See [the bridge contract and before/after example](docs/sections.md).
 
+## Styled table cells
+
+Set `Block.Table` to a `TableFormat` whose `Cells` exactly matches rectangular
+`Block.Rows`. Each `CellFormat` supplies padding, background, four solid border
+edges, and left/center/right text alignment. A zero format means transparent,
+undecorated cells with no padding; it does not add header fill or row rules.
+Omit `Block.Table` to retain existing table rendering.
+
+Column widths remain content-weighted and cells align to the row's top. This is
+not a CSS table layout engine: spans, border collapse, vertical alignment, fixed
+column widths and percentage sizing are not supported. All style values are
+bounded; styled cells share the document's `Limits.Blocks` budget. The existing
+operation, glyph, height and deadline limits still apply. See
+[the cell-style contract](docs/tables.md).
+
 ## Acknowledgements
 
 We are very thankful to the [`go-text`](https://github.com/go-text) authors for

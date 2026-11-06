@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add opt-in per-cell table padding, backgrounds, solid borders and horizontal text alignment, preserving existing table defaults when omitted.
+
 ## v0.2.0 - 2026-11-05
 
 - Add lazy AST chunk sources with a two-layout cache for long documents and conversations.

@@ -130,6 +130,7 @@ type Image struct {
 type Block struct {
 	SourceID string       // opaque caller identity; empty means none
 	Format   *BlockFormat // resolved spacing; nil keeps semantic defaults
+	Table    *TableFormat // opt-in cell styling; nil keeps legacy table decoration
 	Kind     Kind
 	Spans    []Span
 	Rows     [][][]Span // Table: rows of cells of spans; the first row is the header

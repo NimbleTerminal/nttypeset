@@ -180,3 +180,11 @@ their anchors. `LineChunks` indexes a bounded text string without eagerly
 highlighting or shaping it. Its global line ranges feed the optional layout
 gutter offsets. Tests cover distant AST navigation, eviction, cancellation,
 font invalidation, Unicode boundaries and whole-history line reconstruction.
+
+## Styled tables
+
+`table.go` validates the opt-in `Block.Table` matrix and lays out styled cells;
+`layout.go` retains the legacy table path. `table_test.go` checks calculated
+paint coordinates, wrapped alignment, selection/link hits, invalid styles,
+cancellation and budget rollback. Table matrices and styles are immutable while
+a Layout uses them. See [docs/tables.md](docs/tables.md) for the model boundary.
