@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.3.0 - 2026-11-06
+
 - Add opt-in per-cell table padding, backgrounds, solid borders and horizontal text alignment, preserving existing table defaults when omitted.
 
 ## v0.2.0 - 2026-11-05
