@@ -33,6 +33,7 @@ type operation struct {
 	destination    string
 	animated       bool
 	fill           fillRole
+	round          int // A fill's corner radius in layout pixels; 0 is square.
 	explicitFill   bool
 	// A text run's place: the paragraph's runes, and which paragraph of
 	// which block it is, the same at every width.
@@ -349,6 +350,7 @@ func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 		height := max(leading, ascent+descent)
 		baseline := y + (height-ascent-descent)/2 + ascent
 		advance := fixed.I(x)
+		first, inChip := len(ops), false
 		for _, r := range runs {
 			run := r
 			l.glyphs += len(r.Glyphs)
@@ -368,15 +370,55 @@ func (l *Layout) text(spans []Span, size, x, y, width int) ([]operation, int) {
 				ink = s.inks[r.Runes.Offset]
 				rl = s.roles[r.Runes.Offset]
 			}
+			// A chip's padding is room of its own, not drawn over its neighbors.
+			if code := style&Code != 0; code != inChip {
+				advance += fixed.I(chipPad(size))
+				inChip = code
+			}
 			ops = append(ops, operation{token: token, rect: image.Rect(advance.Floor(), y, (advance + r.Advance).Ceil(), y+height), run: &run, href: href, size: size, style: style, ink: ink, role: rl, baseline: baseline, text: s.text, block: l.next - 1, para: para})
 			advance += r.Advance
 		}
+		ops = chipLine(ops, first, size)
 		y += height
 		if done {
 			break
 		}
 	}
 	return ops, y - start
+}
+
+// chipPad is the room a code chip leaves around its text, in layout pixels,
+// at text size size: on each side, and the radius of its corners.
+func chipPad(size int) int { return max(2, size/6) }
+
+// chipLine puts a code chip behind each stretch of Code runs among the line's
+// operations ops[line:], ahead of the line's text so the text draws over it.
+// A chip covers the runs' ink, from their ascent to their descent, padded a
+// little on every side (the layout left that room beside them), with rounded
+// corners, and stays inside the line's height.
+func chipLine(ops []operation, line, size int) []operation {
+	var fills []operation
+	pad := chipPad(size)
+	for i := line; i < len(ops); {
+		if ops[i].style&Code == 0 {
+			i++
+			continue
+		}
+		r, ascent, descent := ops[i].rect, 0, 0
+		for ; i < len(ops) && ops[i].style&Code != 0; i++ {
+			r = r.Union(ops[i].rect)
+			b := ops[i].run.LineBounds
+			ascent, descent = max(ascent, b.Ascent.Ceil()), max(descent, (-b.Descent).Ceil())
+		}
+		baseline := ops[i-1].baseline
+		top := max(r.Min.Y, baseline-ascent-pad/2)
+		bottom := min(r.Max.Y, baseline+descent+pad/2)
+		fills = append(fills, operation{rect: image.Rect(r.Min.X-pad, top, r.Max.X+pad, bottom), fill: fillCode, round: pad})
+	}
+	if len(fills) == 0 {
+		return ops
+	}
+	return append(ops[:line], append(fills, ops[line:]...)...)
 }
 
 // gutterWidth is the room the line numbers take: the widest number the

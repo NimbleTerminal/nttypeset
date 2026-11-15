@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	"math"
 
@@ -110,6 +111,8 @@ func (l *Layout) rasterTo(v View, w, h int, opts RasterOptions) *image.RGBA {
 		switch {
 		case op.explicitFill:
 			draw.Draw(out, r, &image.Uniform{C: op.ink}, image.Point{}, draw.Over)
+		case op.fill != fillNone && op.round > 0:
+			roundRect(out, r, int(math.Round(float64(op.round)*scale)), p.fillColor(op.fill))
 		case op.fill != fillNone:
 			draw.Draw(out, r, &image.Uniform{C: p.fillColor(op.fill)}, image.Point{}, draw.Src)
 		case op.asset != nil:
@@ -188,4 +191,18 @@ func markSpan(m Mark, op *operation) (x0, x1 int, ok bool) {
 	}
 	off, count := op.run.Runes.Offset, op.run.Runes.Count
 	return runSpan(op, max(m.Start, off)-off, min(m.End, off+count)-off)
+}
+
+// roundRect fills r in c with corners of radius, a row at a time.
+func roundRect(out *image.RGBA, r image.Rectangle, radius int, c color.RGBA) {
+	radius = min(radius, r.Dx()/2, r.Dy()/2)
+	u := image.NewUniform(c)
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		inset := 0
+		if d := min(y-r.Min.Y, r.Max.Y-1-y); d < radius {
+			dy := float64(radius) - float64(d) - 0.5
+			inset = int(math.Round(float64(radius) - math.Sqrt(float64(radius*radius)-dy*dy)))
+		}
+		draw.Draw(out, image.Rect(r.Min.X+inset, y, r.Max.X-inset, y+1), u, image.Point{}, draw.Src)
+	}
 }

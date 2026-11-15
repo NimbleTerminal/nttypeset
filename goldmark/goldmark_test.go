@@ -243,3 +243,26 @@ func TestBuildLinkedImageAndNoPanic(t *testing.T) {
 		t.Error("nil root: want an error")
 	}
 }
+
+func TestBuildCodeSpanIsAChip(t *testing.T) {
+	source := []byte("Press `Esc` to go back, and **`q`** to quit.\n\n- [x] done\n")
+	doc, err := goldmark.Build(context.Background(), parse(t, source), source, goldmark.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	styles := map[string]nttypeset.Style{}
+	for _, b := range doc.Blocks {
+		for _, s := range b.Spans {
+			styles[s.Text] = s.Style
+		}
+	}
+	if got := styles["Esc"]; got != nttypeset.Mono|nttypeset.Code {
+		t.Errorf("code span style = %v, want Mono|Code", got)
+	}
+	if got := styles["q"]; got != nttypeset.Bold|nttypeset.Mono|nttypeset.Code {
+		t.Errorf("bold code span style = %v, want Bold|Mono|Code", got)
+	}
+	if got := styles["[x] "]; got != nttypeset.Mono {
+		t.Errorf("task box style = %v, want Mono only", got)
+	}
+}

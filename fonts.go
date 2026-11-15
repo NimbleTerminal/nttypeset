@@ -23,8 +23,8 @@ const (
 	VariantBoldItalic = "BoldItalic"
 )
 
-// Variant names the face variant the Bold and Italic bits select. Mono and
-// Strike do not change the variant.
+// Variant names the face variant the Bold and Italic bits select. Mono,
+// Strike and Code do not change the variant.
 func (s Style) Variant() string {
 	switch {
 	case s&Bold != 0 && s&Italic != 0:

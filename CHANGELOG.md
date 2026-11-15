@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add the `Code` style: text set on a padded chip of the palette's Code color, one chip a line where it wraps. The goldmark builder gives inline code `Mono|Code`, so it stands apart from prose as it does in terminal Markdown.
+
 ## v0.3.0 - 2026-11-06
 
 - Add opt-in per-cell table padding, backgrounds, solid borders and horizontal text alignment, preserving existing table defaults when omitted.

@@ -10,8 +10,8 @@ import (
 // Margin is the layout pixels around the page; the first block starts at y = Margin.
 const Margin = 50
 
-// Style is a set of face flags. Bold|Italic|Mono|Strike; the low three bits
-// select one of the eight loaded faces.
+// Style is a set of face flags. Bold|Italic|Mono|Strike|Code; the low three
+// bits select one of the eight loaded faces.
 type Style uint8
 
 // The Style flags.
@@ -24,6 +24,10 @@ const (
 	Mono
 	// Strike draws a line through the text; it does not select a face.
 	Strike
+	// Code sets the text on a chip of the palette's Code color, padded a
+	// little past its ends, one chip a line where it wraps; it does not select
+	// a face. Markdown's inline code is Mono|Code.
+	Code
 )
 
 // Role names a semantic ink the palette resolves at paint time.

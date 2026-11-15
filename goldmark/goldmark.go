@@ -212,7 +212,7 @@ func inline(n ast.Node, data []byte, style nttypeset.Style) []nttypeset.Span {
 			}
 			out = append(out, inline(v, data, style|flag)...)
 		case *ast.CodeSpan:
-			out = append(out, inline(v, data, style|nttypeset.Mono)...)
+			out = append(out, inline(v, data, style|nttypeset.Mono|nttypeset.Code)...)
 		case *ext.Strikethrough:
 			out = append(out, inline(v, data, style|nttypeset.Strike)...)
 		case *ext.TaskCheckBox:

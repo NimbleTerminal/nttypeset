@@ -1073,3 +1073,85 @@ func TestParagraphSeparators(t *testing.T) {
 		t.Fatalf("CRLF across spans added a paragraph or lost style: %+v", lay.ops)
 	}
 }
+
+// chips are the code fills a layout drew behind text, in display order.
+func chips(l *Layout) []image.Rectangle {
+	var out []image.Rectangle
+	for _, op := range l.ops {
+		if op.run == nil && op.asset == nil && op.fill == fillCode {
+			out = append(out, op.rect)
+		}
+	}
+	return out
+}
+
+func TestCodeChip(t *testing.T) {
+	doc := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{
+		{Text: "Press "}, {Text: "Esc", Style: Mono | Code}, {Text: " to go back, "},
+		{Text: "mono", Style: Mono}, {Text: " has no chip."},
+	}}}}
+	l := mustLayout(t, testEngine(t), doc, 900, LayoutOptions{})
+	if err := l.Complete(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	got := chips(l)
+	if len(got) != 1 {
+		t.Fatalf("chips = %v, want one", got)
+	}
+	chip := got[0]
+	chipAt, runAt := -1, -1
+	var run, line image.Rectangle
+	for i, op := range l.ops {
+		if op.run == nil {
+			if op.rect == chip {
+				chipAt = i
+			}
+			continue
+		}
+		line = line.Union(op.rect)
+		if op.style&Code != 0 {
+			runAt, run = i, op.rect
+		}
+	}
+	if runAt < 0 || chipAt > runAt {
+		t.Fatalf("chip at op %d, its run at %d: the chip must come first", chipAt, runAt)
+	}
+	if chip.Min.X >= run.Min.X || chip.Max.X <= run.Max.X {
+		t.Errorf("chip %v does not pad the run %v on both sides", chip, run)
+	}
+	if chip.Min.Y < line.Min.Y || chip.Max.Y > line.Max.Y || chip.Dy() >= line.Dy() {
+		t.Errorf("chip %v is not inside the line %v", chip, line)
+	}
+	dark := DarkPalette()
+	img := mustRaster(t, l, View{Width: 900, Height: l.Extent() - Margin, Scale: 1}, dark)
+	if c := img.RGBAAt(chip.Min.X, (chip.Min.Y+chip.Max.Y)/2); c != dark.Code {
+		t.Errorf("chip edge is %v, want the palette's Code %v", c, dark.Code)
+	}
+	if c := img.RGBAAt(chip.Min.X, chip.Min.Y); c != dark.Background {
+		t.Errorf("chip corner is %v, want it rounded off to the background %v", c, dark.Background)
+	}
+	for _, op := range l.ops {
+		if op.run != nil && op.style&Code == 0 && op.rect.Min.X+1 < chip.Max.X && op.rect.Max.X-1 > chip.Min.X { // run rectangles round outward a pixel
+			t.Errorf("chip %v overlaps the neighboring run %v", chip, op.rect)
+		}
+	}
+}
+
+func TestCodeChipWrapsByLine(t *testing.T) {
+	doc := &Document{Blocks: []Block{{Kind: KindParagraph, Spans: []Span{
+		{Text: "Run "}, {Text: "gloss --serve --pick --prompt invoice report.pdf", Style: Mono | Code}, {Text: " now."},
+	}}}}
+	l := mustLayout(t, testEngine(t), doc, 300, LayoutOptions{})
+	if err := l.Complete(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	got := chips(l)
+	if len(got) < 2 {
+		t.Fatalf("chips = %v, want one for each line the span wraps over", got)
+	}
+	for i := 1; i < len(got); i++ {
+		if got[i].Min.Y < got[i-1].Max.Y {
+			t.Errorf("chips %v and %v overlap: one a line", got[i-1], got[i])
+		}
+	}
+}
